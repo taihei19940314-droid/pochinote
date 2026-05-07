@@ -180,8 +180,83 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right col placeholder */}
-        <div className="col-span-5" />
+        {/* Right col */}
+        <div className="col-span-5 flex flex-col gap-4">
+
+          {/* Auto-offer panel */}
+          <div className="card p-6" style={{ background: "var(--ink)", color: "var(--paper)" }}>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div className="text-[11px] tracking-[0.2em] uppercase mb-1" style={{ opacity: 0.6 }}>Auto Offer Engine</div>
+                <h2 className="font-display text-xl font-semibold tracking-tight">
+                  空き枠の<br /><span style={{ color: "var(--terra)" }}>自動セールス</span>
+                </h2>
+              </div>
+              <span className="pill" style={{ background: "rgba(217,119,87,0.2)", color: "var(--terra)" }}>14:00〜15:30 90分</span>
+            </div>
+            <div className="text-xs mb-4 leading-relaxed" style={{ opacity: 0.7 }}>
+              Pochinote が選んだ常連 <span className="font-semibold" style={{ opacity: 1 }}>4 名</span>。LINEで限定オファーを配信できます。
+            </div>
+
+            <div className="space-y-2">
+              {[
+                { emoji: "🐕", name: "田中さん × モカ", breed: "トイプードル", days: 30, regular: "¥8,800", offer: "¥7,800", priority: "var(--terra)" },
+                { emoji: "🐩", name: "山田さん × こてつ", breed: "シーズー", days: 35, regular: "¥5,500", offer: "¥4,900", priority: "var(--gold)" },
+                { emoji: "🐕‍🦺", name: "佐藤さん × ラテ", breed: "ゴルレト", days: 42, regular: "¥12,800", offer: "¥10,800", priority: "var(--terra)" },
+                { emoji: "🐕", name: "鈴木さん × ベル", breed: "ポメラニアン", days: 28, regular: "¥7,200", offer: "¥6,500", priority: "rgba(255,255,255,0.3)" },
+              ].map((c, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: "rgba(250,247,242,0.06)" }}>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: c.priority }} />
+                  <div className="dog-avatar" style={{ background: "rgba(217,119,87,0.2)" }}>{c.emoji}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium">{c.name} <span className="text-xs font-normal" style={{ opacity: 0.5 }}>/ {c.breed}</span></div>
+                    <div className="text-[11px] font-mono" style={{ opacity: 0.55 }}>前回 {c.days}日前 · 通常 {c.regular}</div>
+                  </div>
+                  <div className="text-sm font-semibold" style={{ color: "var(--terra)" }}>{c.offer}</div>
+                </div>
+              ))}
+            </div>
+
+            <button className="mt-5 w-full py-3 rounded-lg text-xs font-semibold tracking-wider uppercase" style={{ background: "var(--terra)", color: "white" }}>
+              LINE で一括送信
+            </button>
+          </div>
+
+          {/* Alerts panel */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-xl font-semibold tracking-tight">気になるサイン</h2>
+              <span className="text-[11px] font-mono" style={{ color: "var(--ink-soft)" }}>3 件</span>
+            </div>
+            <div className="space-y-3">
+              <div className="flex gap-3 p-3 rounded-lg" style={{ background: "rgba(217,119,87,0.08)" }}>
+                <div className="text-xl">⚠️</div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold">ベル(15:30予定) — 爪切り注意</div>
+                  <div className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>前回爪切り途中で中断。今日も慎重に対応してください。</div>
+                </div>
+                <button className="text-[11px] font-semibold uppercase tracking-wider self-center" style={{ color: "var(--terra)" }}>確認</button>
+              </div>
+              <div className="flex gap-3 p-3 rounded-lg" style={{ background: "rgba(200,155,60,0.08)" }}>
+                <div className="text-xl">📅</div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold">こなつ(プードル) — 60日経過</div>
+                  <div className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>最終来店から60日。再来促進メッセージを送ることを推奨します。</div>
+                </div>
+                <button className="text-[11px] font-semibold uppercase tracking-wider self-center" style={{ color: "var(--terra)" }}>対応</button>
+              </div>
+              <div className="flex gap-3 p-3 rounded-lg" style={{ background: "rgba(107,142,127,0.08)" }}>
+                <div className="text-xl">🎂</div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold">さくら(ヨークシャー) — 来週誕生日</div>
+                  <div className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>お祝いメッセージを自動送信する予定です。</div>
+                </div>
+                <button className="text-[11px] font-semibold uppercase tracking-wider self-center" style={{ color: "var(--terra)" }}>確認</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
