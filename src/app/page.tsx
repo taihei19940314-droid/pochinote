@@ -1,165 +1,147 @@
-import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
+import Link from "next/link";
 
-async function getSupabaseStatus() {
-  try {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.getSession();
-    if (error) return { ok: false, message: error.message };
-    return { ok: true, message: "接続成功" };
-  } catch (e) {
-    return { ok: false, message: String(e) };
-  }
-}
-
-async function getSalon() {
-  try {
-    const supabase = createAdminClient();
-    const { data, error } = await supabase
-      .from("salons")
-      .select("name, address, phone")
-      .limit(1)
-      .single();
-
-    if (error) return { salon: null, error: error.message };
-    return { salon: data, error: null };
-  } catch (e) {
-    return { salon: null, error: String(e) };
-  }
-}
-
-export default async function Home() {
-  const [status, { salon, error: salonError }] = await Promise.all([
-    getSupabaseStatus(),
-    getSalon(),
-  ]);
-
+export default function HomePage() {
   return (
-    <main
-      className="min-h-screen flex flex-col items-center justify-center gap-10 py-16"
-      style={{ background: "var(--paper)" }}
-    >
-      {/* ロゴ + ブランド */}
-      <div className="flex flex-col items-center gap-4">
-        <svg width="64" height="64" viewBox="0 0 32 32" fill="none">
-          <circle cx="16" cy="18" r="9" fill="var(--terra)" />
-          <circle cx="10" cy="9" r="3" fill="var(--ink)" />
-          <circle cx="22" cy="9" r="3" fill="var(--ink)" />
-          <circle cx="6" cy="14" r="2.5" fill="var(--ink)" />
-          <circle cx="26" cy="14" r="2.5" fill="var(--ink)" />
-        </svg>
-        <div className="text-center">
-          <h1 className="text-5xl font-semibold tracking-tight" style={{ color: "var(--ink)" }}>
-            Pochinote
+    <div style={{ background: "var(--paper)", color: "var(--ink)", minHeight: "100vh" }}>
+
+      {/* Header */}
+      <nav className="sticky top-0 z-40 border-b backdrop-blur-sm" style={{ background: "rgba(250,247,242,0.88)", borderColor: "rgba(26,26,46,0.08)" }}>
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+              <circle cx="16" cy="18" r="9" fill="var(--terra)" />
+              <circle cx="10" cy="9" r="3" fill="var(--ink)" />
+              <circle cx="22" cy="9" r="3" fill="var(--ink)" />
+              <circle cx="6" cy="14" r="2.5" fill="var(--ink)" />
+              <circle cx="26" cy="14" r="2.5" fill="var(--ink)" />
+            </svg>
+            <div>
+              <div className="font-display text-lg font-semibold leading-none tracking-tight">Pochinote</div>
+              <div className="text-[9px] tracking-[0.18em] uppercase mt-0.5" style={{ color: "var(--ink-soft)" }}>for groomers</div>
+            </div>
+          </div>
+          <Link href="/dashboard">
+            <span className="text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-80" style={{ background: "var(--ink)", color: "var(--paper)" }}>
+              ダッシュボードへ →
+            </span>
+          </Link>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="py-28 relative overflow-hidden" style={{
+        background: "radial-gradient(ellipse 80% 50% at 70% 20%, rgba(217,119,87,0.15), transparent 60%), radial-gradient(ellipse 60% 40% at 20% 80%, rgba(107,142,127,0.10), transparent 60%), var(--paper)"
+      }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="inline-flex items-center gap-2 mb-7 px-3 py-1.5 rounded-full text-xs font-medium" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--terra)" }} />
+            β版・先着 50 店舗 募集中
+          </div>
+
+          <h1 className="font-display text-[64px] leading-[0.96] font-light tracking-tight mb-7">
+            トリマーが、<br />
+            施術に<span className="font-semibold italic" style={{ color: "var(--terra)" }}>集中</span>できる<br />
+            毎日を。
           </h1>
-          <p className="text-xs tracking-[0.25em] uppercase mt-1" style={{ color: "var(--ink-soft)" }}>
-            for groomers
+
+          <p className="text-lg leading-relaxed max-w-xl mb-10" style={{ color: "var(--ink-soft)" }}>
+            LINE集客 × 空き枠自動販売 × ビフォーアフター活用。<br />
+            <span className="font-semibold" style={{ color: "var(--ink)" }}>Pochinote は、トリマーのための"接客しないセールスエンジン"です。</span>
           </p>
-        </div>
-        <p className="text-base text-center max-w-xs leading-relaxed" style={{ color: "var(--ink-soft)" }}>
-          トリマーが、施術に集中できる毎日を。
-        </p>
-      </div>
 
-      {/* ステータスカード群 */}
-      <div className="flex flex-col items-center gap-4 w-full max-w-sm px-4">
-
-        {/* Supabase 接続ステータス */}
-        <div
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium"
-          style={{
-            background: status.ok ? "rgba(107,142,127,0.10)" : "rgba(217,119,87,0.10)",
-            color: status.ok ? "var(--sage)" : "var(--terra-deep)",
-            border: `1px solid ${status.ok ? "rgba(107,142,127,0.25)" : "rgba(217,119,87,0.25)"}`,
-          }}
-        >
-          <span className="text-base">{status.ok ? "✓" : "✗"}</span>
-          <span>
-            Supabase 接続:{" "}
-            <span className="font-semibold">{status.ok ? "Connected" : "Failed"}</span>
-          </span>
-        </div>
-
-        {/* サロン情報カード */}
-        {salon ? (
-          <div
-            className="w-full rounded-xl p-5"
-            style={{
-              background: "white",
-              border: "1px solid rgba(26,26,46,0.08)",
-              boxShadow: "0 4px 16px -8px rgba(26,26,46,0.10)",
-            }}
-          >
-            {/* カードヘッダー */}
-            <div className="flex items-center gap-2 mb-4">
-              <span
-                className="text-[10px] font-bold tracking-[0.2em] uppercase px-2 py-1 rounded-full"
-                style={{ background: "rgba(217,119,87,0.12)", color: "var(--terra-deep)" }}
-              >
-                現在のサロン
+          <div className="flex flex-wrap items-center gap-4 mb-14">
+            <Link href="/dashboard">
+              <span className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90" style={{ background: "var(--terra)", color: "white" }}>
+                β版を見てみる →
               </span>
-            </div>
-
-            {/* サロン名 */}
-            <p className="text-xl font-semibold mb-3" style={{ color: "var(--ink)" }}>
-              {salon.name}
-            </p>
-
-            {/* 詳細情報 */}
-            <div className="space-y-2">
-              {salon.address && (
-                <div className="flex items-start gap-2 text-sm" style={{ color: "var(--ink-soft)" }}>
-                  <span className="mt-0.5 opacity-60">📍</span>
-                  <span>{salon.address}</span>
-                </div>
-              )}
-              {salon.phone && (
-                <div className="flex items-center gap-2 text-sm" style={{ color: "var(--ink-soft)" }}>
-                  <span className="opacity-60">📞</span>
-                  <span>{salon.phone}</span>
-                </div>
-              )}
-            </div>
-
-            {/* フッター */}
-            <div
-              className="mt-4 pt-3 text-[11px] font-mono"
-              style={{ borderTop: "1px solid rgba(26,26,46,0.06)", color: "var(--sage)" }}
-            >
-              ✓ データベースから取得
-            </div>
+            </Link>
+            <Link href="/line-preview">
+              <span className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg text-sm font-semibold border transition-colors hover:bg-black/5" style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink)" }}>
+                飼い主体験を見る
+              </span>
+            </Link>
           </div>
-        ) : (
-          <div
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm"
-            style={{
-              background: "rgba(217,119,87,0.08)",
-              border: "1px solid rgba(217,119,87,0.2)",
-              color: "var(--terra-deep)",
-            }}
-          >
-            <span>✗</span>
-            <span>サロン情報の取得に失敗しました: {salonError}</span>
-          </div>
-        )}
 
-        {/* 開発中バッジ */}
-        <div
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold"
-          style={{ background: "rgba(217,119,87,0.12)", color: "var(--terra-deep)" }}
-        >
-          <span className="w-2 h-2 rounded-full" style={{ background: "var(--terra)" }} />
-          開発中 — Next.js 16 + Supabase + LINE
+          <div className="flex items-center gap-8">
+            {[
+              ["3分", "で初期設定完了"],
+              ["¥0", "初期費用"],
+              ["1タップ", "写真送信"],
+            ].map(([num, label], i) => (
+              <div key={i} className="flex items-center gap-8">
+                {i > 0 && <div className="w-px h-10" style={{ background: "rgba(26,26,46,0.1)" }} />}
+                <div>
+                  <div className="font-display text-3xl font-light">{num}</div>
+                  <div className="text-[11px] tracking-wider uppercase mt-1" style={{ color: "var(--ink-soft)" }}>{label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+      </section>
 
-        <Button
-          style={{ background: "var(--ink)", color: "var(--paper)" }}
-          className="rounded-full px-8"
-        >
-          ダッシュボードへ →
-        </Button>
-      </div>
-    </main>
+      {/* Features */}
+      <section className="py-24 border-t" style={{ borderColor: "rgba(26,26,46,0.06)", background: "var(--paper-warm)" }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <div className="text-xs tracking-[0.2em] uppercase mb-3" style={{ color: "var(--ink-soft)" }}>What Pochinote does</div>
+            <h2 className="font-display text-4xl font-light tracking-tight">
+              売上を、寝ている間にも<span className="italic" style={{ color: "var(--terra)" }}>育てる</span>。
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-3 gap-5">
+            {[
+              { icon: "📊", title: "経営の見える化", href: "/dashboard",
+                desc: "稼働率・売上・空き枠をダッシュボードで一目把握。勘ではなくデータで動ける。" },
+              { icon: "💬", title: "自動オファー配信", href: "/dashboard",
+                desc: "来店周期をAIが分析。空き枠が出たら常連さんにLINEで自動配信、リピート率UP。" },
+              { icon: "📸", title: "ビフォーアフター活用", href: "/line-preview",
+                desc: "施術後の写真をワンタップで飼い主に送信。SNS口コミに育ち、新規集客につながる。" },
+            ].map((f) => (
+              <Link key={f.title} href={f.href}>
+                <div className="card p-7 h-full cursor-pointer transition-shadow hover:shadow-md">
+                  <div className="text-4xl mb-5">{f.icon}</div>
+                  <h3 className="font-display text-xl font-semibold mb-3 tracking-tight">{f.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>{f.desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Beta CTA */}
+      <section className="py-24 border-t" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
+        <div className="max-w-2xl mx-auto px-6 text-center">
+          <div className="text-xs tracking-[0.2em] uppercase mb-4" style={{ color: "var(--ink-soft)" }}>Limited beta</div>
+          <h2 className="font-display text-4xl font-light tracking-tight mb-4">β50店舗、限定募集中</h2>
+          <p className="text-base mb-2" style={{ color: "var(--ink-soft)" }}>
+            月額 <span className="font-semibold" style={{ color: "var(--ink)" }}>¥3,800</span>（Pro）・初月無料・いつでも解約可能
+          </p>
+          <p className="text-sm mb-10" style={{ color: "var(--ink-soft)" }}>初期費用なし。LINEと繋いで3分でスタート。</p>
+
+          <div className="flex gap-3 max-w-md mx-auto">
+            <input
+              type="email"
+              placeholder="メールアドレス"
+              readOnly
+              className="flex-1 px-4 py-3 rounded-lg border text-sm outline-none"
+              style={{ borderColor: "rgba(26,26,46,0.15)", background: "white" }}
+            />
+            <button className="px-5 py-3 rounded-lg text-sm font-semibold whitespace-nowrap transition-opacity hover:opacity-90" style={{ background: "var(--terra)", color: "white" }}>
+              申し込む →
+            </button>
+          </div>
+          <p className="text-xs mt-4" style={{ color: "var(--ink-soft)" }}>スパムは送りません。いつでも登録解除できます。</p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 border-t text-center text-xs" style={{ borderColor: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>
+        © 2026 Pochinote · トリマーのための SaaS
+      </footer>
+
+    </div>
   );
 }
