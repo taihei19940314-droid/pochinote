@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 function getGreeting(hour: number) {
   if (hour < 12) return "おはよう";
   if (hour < 17) return "こんにちは";
@@ -6,6 +8,13 @@ function getGreeting(hour: number) {
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const barHeights = [40, 55, 35, 70, 50, 60, 85];
+
+const offerCandidates = [
+  { id: "1", emoji: "🐕",   name: "田中さん × モカ",  breed: "トイプードル", days: 30, regular: "¥8,800",  offer: "¥7,800",  priority: "var(--terra)" },
+  { id: "2", emoji: "🐩",   name: "山田さん × こてつ", breed: "シーズー",    days: 35, regular: "¥5,500",  offer: "¥4,900",  priority: "var(--gold)" },
+  { id: "3", emoji: "🐕‍🦺", name: "佐藤さん × ラテ",  breed: "ゴルレト",    days: 42, regular: "¥12,800", offer: "¥10,800", priority: "var(--terra)" },
+  { id: "4", emoji: "🐕",   name: "鈴木さん × ベル",  breed: "ポメラニアン", days: 28, regular: "¥7,200",  offer: "¥6,500",  priority: "rgba(255,255,255,0.3)" },
+];
 
 export default function DashboardPage() {
   const now = new Date();
@@ -87,45 +96,52 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-0">
-            {/* 完了 */}
-            <div className="flex items-center gap-4 py-3 border-b opacity-60" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
-              <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>09:00</div>
-              <div className="dot" style={{ background: "var(--sage)" }} />
-              <div className="dog-avatar">🐕</div>
-              <div className="flex-1">
-                <div className="font-medium text-sm">モカ <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ トイプードル ♀ 4y</span></div>
-                <div className="text-xs" style={{ color: "var(--ink-soft)" }}>フルコース + 部分カット · 田中様</div>
-              </div>
-              <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥8,800</div>
-            </div>
-
-            <div className="flex items-center gap-4 py-3 border-b opacity-60" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
-              <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>10:30</div>
-              <div className="dot" style={{ background: "var(--sage)" }} />
-              <div className="dog-avatar">🐩</div>
-              <div className="flex-1">
-                <div className="font-medium text-sm">こてつ <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ シーズー ♂ 7y</span></div>
-                <div className="text-xs" style={{ color: "var(--ink-soft)" }}>シャンプーのみ · 山田様</div>
-              </div>
-              <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥5,500</div>
-            </div>
-
-            {/* 施術中 */}
-            <div className="flex items-center gap-4 py-3 border-b -mx-3 px-3 rounded-lg" style={{ borderColor: "rgba(26,26,46,0.05)", background: "linear-gradient(90deg, rgba(217,119,87,0.06), transparent)" }}>
-              <div className="font-mono text-xs font-semibold w-14" style={{ color: "var(--terra-deep)" }}>12:00</div>
-              <div className="dot" style={{ background: "var(--terra)" }} />
-              <div className="dog-avatar">🐕‍🦺</div>
-              <div className="flex-1">
-                <div className="font-medium text-sm">ラテ <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ ゴールデンレトリバー ♀ 3y</span></div>
-                <div className="text-xs flex items-center gap-2" style={{ color: "var(--ink-soft)" }}>
-                  フルコース + 爪切り · 佐藤様
-                  <span className="pill" style={{ background: "var(--terra)", color: "white" }}>施術中 残32分</span>
+            {/* 完了: モカ id=1 */}
+            <Link href="/customers/1">
+              <div className="flex items-center gap-4 py-3 border-b opacity-60 rounded-lg transition-colors hover:bg-[rgba(217,119,87,0.04)]" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
+                <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>09:00</div>
+                <div className="dot" style={{ background: "var(--sage)" }} />
+                <div className="dog-avatar">🐕</div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">モカ <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ トイプードル ♀ 4y</span></div>
+                  <div className="text-xs" style={{ color: "var(--ink-soft)" }}>フルコース + 部分カット · 田中様</div>
                 </div>
+                <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥8,800</div>
               </div>
-              <div className="text-xs font-mono font-semibold" style={{ color: "var(--terra-deep)" }}>¥12,800</div>
-            </div>
+            </Link>
 
-            {/* 空き枠 */}
+            {/* 完了: こてつ id=2 */}
+            <Link href="/customers/2">
+              <div className="flex items-center gap-4 py-3 border-b opacity-60 rounded-lg transition-colors hover:bg-[rgba(217,119,87,0.04)]" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
+                <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>10:30</div>
+                <div className="dot" style={{ background: "var(--sage)" }} />
+                <div className="dog-avatar">🐩</div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">こてつ <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ シーズー ♂ 7y</span></div>
+                  <div className="text-xs" style={{ color: "var(--ink-soft)" }}>シャンプーのみ · 山田様</div>
+                </div>
+                <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥5,500</div>
+              </div>
+            </Link>
+
+            {/* 施術中: ラテ id=3 */}
+            <Link href="/customers/3">
+              <div className="flex items-center gap-4 py-3 border-b -mx-3 px-3 rounded-lg transition-colors hover:brightness-95" style={{ borderColor: "rgba(26,26,46,0.05)", background: "linear-gradient(90deg, rgba(217,119,87,0.06), transparent)" }}>
+                <div className="font-mono text-xs font-semibold w-14" style={{ color: "var(--terra-deep)" }}>12:00</div>
+                <div className="dot" style={{ background: "var(--terra)" }} />
+                <div className="dog-avatar">🐕‍🦺</div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">ラテ <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ ゴールデンレトリバー ♀ 3y</span></div>
+                  <div className="text-xs flex items-center gap-2" style={{ color: "var(--ink-soft)" }}>
+                    フルコース + 爪切り · 佐藤様
+                    <span className="pill" style={{ background: "var(--terra)", color: "white" }}>施術中 残32分</span>
+                  </div>
+                </div>
+                <div className="text-xs font-mono font-semibold" style={{ color: "var(--terra-deep)" }}>¥12,800</div>
+              </div>
+            </Link>
+
+            {/* 空き枠: クリック不可 */}
             <div className="flex items-center gap-4 py-3 border-b stripe-bg -mx-3 px-3 rounded-lg" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
               <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>14:00</div>
               <div className="dot" style={{ background: "var(--gold)" }} />
@@ -141,42 +157,50 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* 予定 */}
-            <div className="flex items-center gap-4 py-3 border-b" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
-              <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>15:30</div>
-              <div className="dot" style={{ background: "rgba(26,26,46,0.3)" }} />
-              <div className="dog-avatar">🐕</div>
-              <div className="flex-1">
-                <div className="font-medium text-sm">ベル <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ ポメラニアン ♀ 2y</span></div>
-                <div className="text-xs flex items-center gap-2" style={{ color: "var(--ink-soft)" }}>
-                  フルコース · 鈴木様
-                  <span className="pill" style={{ background: "rgba(200,155,60,0.18)", color: "var(--gold)" }}>⚠ 爪切り注意</span>
+            {/* 予定: ベル id=4 */}
+            <Link href="/customers/4">
+              <div className="flex items-center gap-4 py-3 border-b rounded-lg transition-colors hover:bg-[rgba(217,119,87,0.04)]" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
+                <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>15:30</div>
+                <div className="dot" style={{ background: "rgba(26,26,46,0.3)" }} />
+                <div className="dog-avatar">🐕</div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">ベル <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ ポメラニアン ♀ 2y</span></div>
+                  <div className="text-xs flex items-center gap-2" style={{ color: "var(--ink-soft)" }}>
+                    フルコース · 鈴木様
+                    <span className="pill" style={{ background: "rgba(200,155,60,0.18)", color: "var(--gold)" }}>⚠ 爪切り注意</span>
+                  </div>
                 </div>
+                <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥7,200</div>
               </div>
-              <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥7,200</div>
-            </div>
+            </Link>
 
-            <div className="flex items-center gap-4 py-3 border-b" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
-              <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>17:00</div>
-              <div className="dot" style={{ background: "rgba(26,26,46,0.3)" }} />
-              <div className="dog-avatar">🐶</div>
-              <div className="flex-1">
-                <div className="font-medium text-sm">空(そら) <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ ミニチュアシュナウザー ♂ 5y</span></div>
-                <div className="text-xs" style={{ color: "var(--ink-soft)" }}>フルコース + ハーブパック · 高橋様</div>
+            {/* 予定: 空(そら) id=5 */}
+            <Link href="/customers/5">
+              <div className="flex items-center gap-4 py-3 border-b rounded-lg transition-colors hover:bg-[rgba(217,119,87,0.04)]" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
+                <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>17:00</div>
+                <div className="dot" style={{ background: "rgba(26,26,46,0.3)" }} />
+                <div className="dog-avatar">🐶</div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">空(そら) <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ ミニチュアシュナウザー ♂ 5y</span></div>
+                  <div className="text-xs" style={{ color: "var(--ink-soft)" }}>フルコース + ハーブパック · 高橋様</div>
+                </div>
+                <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥9,500</div>
               </div>
-              <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥9,500</div>
-            </div>
+            </Link>
 
-            <div className="flex items-center gap-4 py-3">
-              <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>18:30</div>
-              <div className="dot" style={{ background: "rgba(26,26,46,0.3)" }} />
-              <div className="dog-avatar">🦮</div>
-              <div className="flex-1">
-                <div className="font-medium text-sm">小麦 <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ 柴犬 ♀ 8y</span></div>
-                <div className="text-xs" style={{ color: "var(--ink-soft)" }}>シャンプー + 顔バリ · 渡辺様</div>
+            {/* 予定: 小麦 id=7 */}
+            <Link href="/customers/7">
+              <div className="flex items-center gap-4 py-3 rounded-lg transition-colors hover:bg-[rgba(217,119,87,0.04)]">
+                <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>18:30</div>
+                <div className="dot" style={{ background: "rgba(26,26,46,0.3)" }} />
+                <div className="dog-avatar">🦮</div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">小麦 <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ 柴犬 ♀ 8y</span></div>
+                  <div className="text-xs" style={{ color: "var(--ink-soft)" }}>シャンプー + 顔バリ · 渡辺様</div>
+                </div>
+                <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥6,800</div>
               </div>
-              <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥6,800</div>
-            </div>
+            </Link>
           </div>
         </div>
 
@@ -199,21 +223,18 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-2">
-              {[
-                { emoji: "🐕", name: "田中さん × モカ", breed: "トイプードル", days: 30, regular: "¥8,800", offer: "¥7,800", priority: "var(--terra)" },
-                { emoji: "🐩", name: "山田さん × こてつ", breed: "シーズー", days: 35, regular: "¥5,500", offer: "¥4,900", priority: "var(--gold)" },
-                { emoji: "🐕‍🦺", name: "佐藤さん × ラテ", breed: "ゴルレト", days: 42, regular: "¥12,800", offer: "¥10,800", priority: "var(--terra)" },
-                { emoji: "🐕", name: "鈴木さん × ベル", breed: "ポメラニアン", days: 28, regular: "¥7,200", offer: "¥6,500", priority: "rgba(255,255,255,0.3)" },
-              ].map((c, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: "rgba(250,247,242,0.06)" }}>
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: c.priority }} />
-                  <div className="dog-avatar" style={{ background: "rgba(217,119,87,0.2)" }}>{c.emoji}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">{c.name} <span className="text-xs font-normal" style={{ opacity: 0.5 }}>/ {c.breed}</span></div>
-                    <div className="text-[11px] font-mono" style={{ opacity: 0.55 }}>前回 {c.days}日前 · 通常 {c.regular}</div>
+              {offerCandidates.map((c) => (
+                <Link key={c.id} href={`/customers/${c.id}`}>
+                  <div className="flex items-center gap-3 p-3 rounded-lg transition-opacity hover:opacity-80" style={{ background: "rgba(250,247,242,0.06)" }}>
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: c.priority }} />
+                    <div className="dog-avatar" style={{ background: "rgba(217,119,87,0.2)" }}>{c.emoji}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">{c.name} <span className="text-xs font-normal" style={{ opacity: 0.5 }}>/ {c.breed}</span></div>
+                      <div className="text-[11px] font-mono" style={{ opacity: 0.55 }}>前回 {c.days}日前 · 通常 {c.regular}</div>
+                    </div>
+                    <div className="text-sm font-semibold" style={{ color: "var(--terra)" }}>{c.offer}</div>
                   </div>
-                  <div className="text-sm font-semibold" style={{ color: "var(--terra)" }}>{c.offer}</div>
-                </div>
+                </Link>
               ))}
             </div>
 
