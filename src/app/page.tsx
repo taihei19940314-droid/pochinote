@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BetaSignupForm from "@/components/beta-signup-form";
 
 export default function HomePage() {
   return (
@@ -121,19 +122,7 @@ export default function HomePage() {
           </p>
           <p className="text-sm mb-10" style={{ color: "var(--ink-soft)" }}>初期費用なし。LINEと繋いで3分でスタート。</p>
 
-          <div className="flex gap-3 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="メールアドレス"
-              readOnly
-              className="flex-1 px-4 py-3 rounded-lg border text-sm outline-none"
-              style={{ borderColor: "rgba(26,26,46,0.15)", background: "white" }}
-            />
-            <button className="px-5 py-3 rounded-lg text-sm font-semibold whitespace-nowrap transition-opacity hover:opacity-90" style={{ background: "var(--terra)", color: "white" }}>
-              申し込む →
-            </button>
-          </div>
-          <p className="text-xs mt-4" style={{ color: "var(--ink-soft)" }}>スパムは送りません。いつでも登録解除できます。</p>
+          <BetaSignupForm />
         </div>
       </section>
 
