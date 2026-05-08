@@ -1,12 +1,22 @@
 import Link from "next/link";
 
 function getGreeting(hour: number) {
-  if (hour < 12) return "おはよう";
-  if (hour < 17) return "こんにちは";
+  if (hour >= 5 && hour < 11) return "おはよう";
+  if (hour >= 11 && hour < 18) return "こんにちは";
   return "こんばんは";
 }
 
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function getJSTHour(): number {
+  const jst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  return jst.getHours();
+}
+
+function getJSTDateLabel(): string {
+  const jst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return `${jst.getFullYear()} / ${String(jst.getMonth() + 1).padStart(2, "0")} / ${String(jst.getDate()).padStart(2, "0")} — ${days[jst.getDay()]}`;
+}
+
 const barHeights = [40, 55, 35, 70, 50, 60, 85];
 
 const offerCandidates = [
@@ -17,9 +27,8 @@ const offerCandidates = [
 ];
 
 export default function DashboardPage() {
-  const now = new Date();
-  const greeting = getGreeting(now.getHours());
-  const dateLabel = `${now.getFullYear()} / ${String(now.getMonth() + 1).padStart(2, "0")} / ${String(now.getDate()).padStart(2, "0")} — ${DAYS[now.getDay()]}`;
+  const greeting = getGreeting(getJSTHour());
+  const dateLabel = getJSTDateLabel();
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-2">
