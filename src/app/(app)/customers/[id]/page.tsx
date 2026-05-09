@@ -1,165 +1,209 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { customers } from "@/lib/mock-customers";
+import { createClient } from "@/utils/supabase/server";
 
-const photoSets = [
-  { before: "🐩", after: "✨🐩", beforeBg: "#6b8e7f", afterBg: "#c89b3c", date: "2026-04-07" },
-  { before: "🐕", after: "✨🐕", beforeBg: "#8b7355", afterBg: "#d4a574", date: "2026-03-05" },
-  { before: "🐕", after: "💇🐕", beforeBg: "#7a8c9e", afterBg: "#9bb5c8", date: "2026-02-01" },
-];
+// TODO: 認証実装後、ログイン中のサロンIDに置き換える
+const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 
-export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function calcAge(birthDate: string): string {
+  const birth = new Date(birthDate);
+  const now = new Date();
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  if (months < 0) { years--; months += 12; }
+  return `${years}歳${months}ヶ月`;
+}
+
+function rabiesExpired(date: string | null): boolean {
+  if (!date) return false;
+  return Date.now() - new Date(date).getTime() > 365 * 24 * 60 * 60 * 1000;
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export const dynamic = "force-dynamic";
+
+export default async function CustomerDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ updated?: string }>;
+}) {
   const { id } = await params;
-  const customer = customers.find((c) => c.id === id);
+  const { updated } = await searchParams;
+  const supabase = await createClient();
+
+  const { data: customer } = await supabase
+    .from("customers")
+    .select("id, name, phone, line_user_id, notes")
+    .eq("id", id)
+    .eq("salon_id", DEFAULT_SALON_ID)
+    .single();
+
   if (!customer) notFound();
 
+  const { data: pets } = await supabase
+    .from("pets")
+    .select("id, name, breed, gender, birth_date, weight_kg, notes, rabies_vaccination_date")
+    .eq("customer_id", id);
+
+  const { data: bookings } = await supabase
+    .from("bookings")
+    .select("id, scheduled_at, services, price, status, memo, staff:staff_id(name)")
+    .eq("customer_id", id)
+    .in("status", ["completed", "in_progress"])
+    .order("scheduled_at", { ascending: false });
+
   return (
-    <div className="max-w-4xl mx-auto py-8 px-2">
-      {/* Back */}
+    <div className="max-w-3xl mx-auto py-8 px-4">
       <Link href="/customers" className="inline-flex items-center gap-1 text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
-        ← 顧客一覧に戻る
+        ← 顧客カルテに戻る
       </Link>
 
-      {/* Hero header */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="text-4xl w-16 h-16 flex items-center justify-center rounded-full" style={{ background: "var(--paper-warm)" }}>
-          {customer.emoji}
+      {updated === "1" && (
+        <div className="mb-5 px-4 py-3 rounded-lg text-sm font-medium" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>
+          ✓ 更新しました
         </div>
-        <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">{customer.petName}</h1>
-          <div className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
-            {customer.breed} {customer.sex} {customer.age}y · {customer.ownerName}
+      )}
+
+      {/* Section 1: 飼い主情報 */}
+      <div className="card p-6 mb-5">
+        <div className="flex items-start justify-between mb-4">
+          <h2 className="font-display text-lg font-semibold">飼い主情報</h2>
+          <Link href={`/customers/${id}/edit`}>
+            <span className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
+              style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink-soft)" }}>
+              ✏️ 編集
+            </span>
+          </Link>
+        </div>
+        <h1 className="font-display text-3xl font-light tracking-tight mb-4">{customer.name}</h1>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span style={{ color: "var(--ink-soft)" }}>電話番号</span>
+            <span className="font-medium">{customer.phone ?? "未登録"}</span>
           </div>
-        </div>
-        <div className="ml-auto">
-          <div className="text-right">
-            <div className="text-xs font-mono mb-1" style={{ color: "var(--ink-soft)" }}>次回提案</div>
-            <div className="font-semibold text-sm" style={{ color: customer.nextVisitSuggestion.includes("至急") ? "var(--terra)" : "var(--ink)" }}>
-              {customer.nextVisitSuggestion}
-            </div>
+          <div className="flex justify-between">
+            <span style={{ color: "var(--ink-soft)" }}>LINE ID</span>
+            <span className="font-medium">{customer.line_user_id ?? "未登録"}</span>
           </div>
         </div>
       </div>
 
-      {/* 2-col layout */}
-      <div className="grid grid-cols-5 gap-5 mb-6">
-
-        {/* Left: 基本情報 */}
-        <div className="col-span-2 space-y-4">
-          {/* 飼い主情報 */}
-          <div className="card p-5">
-            <h2 className="font-display text-lg font-semibold mb-3">飼い主情報</h2>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span style={{ color: "var(--ink-soft)" }}>氏名</span>
-                <span className="font-medium">{customer.ownerName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span style={{ color: "var(--ink-soft)" }}>電話</span>
-                <span className="font-mono text-xs">{customer.phone}</span>
-              </div>
-              <div className="flex justify-between">
-                <span style={{ color: "var(--ink-soft)" }}>LINE</span>
-                <span className="pill text-[11px]" style={{
-                  background: customer.lineRegistered ? "rgba(6,199,85,0.12)" : "rgba(26,26,46,0.06)",
-                  color: customer.lineRegistered ? "#06c755" : "var(--ink-soft)",
-                }}>
-                  {customer.lineRegistered ? "登録済" : "未登録"}
-                </span>
-              </div>
-            </div>
+      {/* Section 2: ペット情報 */}
+      <div className="space-y-4 mb-5">
+        {(pets ?? []).length === 0 ? (
+          <div className="card p-6 text-sm text-center" style={{ color: "var(--ink-soft)" }}>
+            ペット情報がありません
           </div>
-
-          {/* ペット情報 */}
-          <div className="card p-5">
-            <h2 className="font-display text-lg font-semibold mb-3">ペット情報</h2>
-            <div className="space-y-2 text-sm">
-              {[
-                ["犬種", customer.breed],
-                ["性別", customer.sex],
-                ["年齢", `${customer.age}歳`],
-                ["体重", `${customer.weight}kg`],
-                ["誕生日", customer.birthday],
-              ].map(([label, value]) => (
-                <div key={label} className="flex justify-between">
-                  <span style={{ color: "var(--ink-soft)" }}>{label}</span>
-                  <span className="font-medium">{value}</span>
+        ) : (
+          (pets ?? []).map((pet) => {
+            const warn = rabiesExpired(pet.rabies_vaccination_date);
+            return (
+              <div key={pet.id} className="card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="text-2xl w-10 h-10 flex items-center justify-center rounded-full flex-shrink-0"
+                    style={{ background: "var(--paper-warm)" }}>🐕</div>
+                  <div>
+                    <div className="font-display text-xl font-semibold">{pet.name}</div>
+                    {pet.breed && <div className="text-xs" style={{ color: "var(--ink-soft)" }}>{pet.breed}</div>}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 注意事項 */}
-          {customer.flags.length > 0 && (
-            <div className="card p-5" style={{ borderLeft: "3px solid var(--terra)" }}>
-              <h2 className="font-display text-lg font-semibold mb-3">注意事項</h2>
-              <div className="space-y-1.5">
-                {customer.flags.map((flag) => (
-                  <div key={flag} className="flex items-center gap-2 text-sm">
-                    <span>⚠️</span>
-                    <span>{flag}</span>
+                <div className="space-y-2 text-sm">
+                  {pet.birth_date && (
+                    <div className="flex justify-between">
+                      <span style={{ color: "var(--ink-soft)" }}>年齢</span>
+                      <span className="font-medium">{calcAge(pet.birth_date)}</span>
+                    </div>
+                  )}
+                  {pet.weight_kg != null && (
+                    <div className="flex justify-between">
+                      <span style={{ color: "var(--ink-soft)" }}>体重</span>
+                      <span className="font-medium">{pet.weight_kg} kg</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span style={{ color: "var(--ink-soft)" }}>狂犬病ワクチン</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        {pet.rabies_vaccination_date ? formatDate(pet.rabies_vaccination_date) : "未登録"}
+                      </span>
+                      {warn && (
+                        <span className="pill text-[10px]" style={{ background: "rgba(192,57,43,0.12)", color: "#c0392b" }}>
+                          ⚠ 期限切れ
+                        </span>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right: 施術履歴 */}
-        <div className="col-span-3 card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-lg font-semibold">施術履歴</h2>
-            <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>全 {customer.visitCount} 回</span>
-          </div>
-          <div className="space-y-0">
-            {customer.treatments.map((t, i) => (
-              <div key={i} className="flex gap-3 py-3 border-b" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
-                <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: i === 0 ? "var(--terra)" : "var(--sage)" }} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="font-medium text-sm">{t.menu}</span>
-                    <span className="font-mono text-sm font-semibold flex-shrink-0">¥{t.price.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-0.5">
-                    <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>{t.date}</span>
-                    <span className="text-xs" style={{ color: "var(--ink-soft)" }}>{t.staff}</span>
-                  </div>
-                  {t.note && (
-                    <div className="text-xs mt-1 px-2 py-1 rounded" style={{ background: "var(--paper-warm)", color: "var(--ink-soft)" }}>
-                      {t.note}
+                  {pet.notes && (
+                    <div className="mt-3 pt-3" style={{ borderTop: "1px solid rgba(26,26,46,0.06)" }}>
+                      <div className="text-xs mb-1" style={{ color: "var(--ink-soft)" }}>注意事項</div>
+                      <span className="pill text-[11px]" style={{ background: "rgba(200,155,60,0.15)", color: "var(--gold)" }}>
+                        ⚠ {pet.notes}
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="mt-4 pt-3 text-sm flex items-center gap-2" style={{ borderTop: "1px solid rgba(26,26,46,0.06)" }}>
-            <span style={{ color: "var(--ink-soft)" }}>次回提案：</span>
-            <span className="font-semibold" style={{ color: "var(--terra)" }}>{customer.nextVisitSuggestion}</span>
-          </div>
-        </div>
+            );
+          })
+        )}
       </div>
 
-      {/* Before/After gallery */}
-      <div className="card p-5">
-        <h2 className="font-display text-lg font-semibold mb-4">ビフォーアフター</h2>
-        <div className="grid grid-cols-3 gap-3">
-          {photoSets.map((p, i) => (
-            <div key={i} className="rounded-lg overflow-hidden" style={{ background: "var(--paper-warm)" }}>
-              <div className="grid grid-cols-2 h-20">
-                <div className="flex items-center justify-center text-2xl relative" style={{ background: `linear-gradient(135deg, ${p.beforeBg}, ${p.beforeBg}cc)` }}>
-                  <span className="text-white/40">{p.before}</span>
-                  <div className="absolute bottom-1 left-1 text-[8px] font-mono text-white bg-black/40 px-1 rounded">BEFORE</div>
-                </div>
-                <div className="flex items-center justify-center text-2xl relative" style={{ background: `linear-gradient(135deg, ${p.afterBg}, ${p.afterBg}cc)` }}>
-                  <span className="text-white/40">{p.after}</span>
-                  <div className="absolute bottom-1 left-1 text-[8px] font-mono text-white bg-black/40 px-1 rounded">AFTER</div>
-                </div>
-              </div>
-              <div className="px-3 py-2 text-[10px] font-mono" style={{ color: "var(--ink-soft)" }}>{p.date}</div>
-            </div>
-          ))}
+      {/* Section 3: 来店履歴 */}
+      <div className="card overflow-hidden">
+        <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
+          <h2 className="font-display text-lg font-semibold">来店履歴</h2>
+          <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>{(bookings ?? []).length} 件</span>
         </div>
+        {(bookings ?? []).length === 0 ? (
+          <div className="px-6 py-12 text-center text-sm" style={{ color: "var(--ink-soft)" }}>
+            まだ来店履歴がありません
+          </div>
+        ) : (
+          <div>
+            {(bookings ?? []).map((b, i) => {
+              const staff = (b.staff as unknown) as { name: string } | null;
+              const services = (b.services as string[] | null) ?? [];
+              return (
+                <div
+                  key={b.id}
+                  className="px-6 py-4"
+                  style={{ borderTop: i > 0 ? "1px solid rgba(26,26,46,0.05)" : undefined }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-mono text-sm font-semibold">{formatDate(b.scheduled_at)}</span>
+                        {b.status === "in_progress" ? (
+                          <span className="pill text-[10px]" style={{ background: "rgba(217,119,87,0.15)", color: "var(--terra-deep)" }}>施術中</span>
+                        ) : (
+                          <span className="pill text-[10px]" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>完了</span>
+                        )}
+                      </div>
+                      {services.length > 0 && (
+                        <div className="text-sm mb-0.5">{services.join("・")}</div>
+                      )}
+                      <div className="flex items-center gap-3 text-xs" style={{ color: "var(--ink-soft)" }}>
+                        {staff?.name && <span>担当: {staff.name}</span>}
+                        {b.memo && <span>{b.memo}</span>}
+                      </div>
+                    </div>
+                    {b.price != null && (
+                      <div className="font-mono text-sm font-semibold flex-shrink-0">
+                        ¥{(b.price as number).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
