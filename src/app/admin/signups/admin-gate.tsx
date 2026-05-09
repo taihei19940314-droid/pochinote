@@ -67,13 +67,9 @@ export default function AdminGate({ children }: Props) {
   }
 
   return (
-    <div data-logout={handleLogout}>
-      {/* Pass logout as a global so SignupsDashboard can call it */}
-      {/* We clone children and inject logout via context instead */}
-      <LogoutContext.Provider value={handleLogout}>
-        {children}
-      </LogoutContext.Provider>
-    </div>
+    <LogoutContext.Provider value={handleLogout}>
+      {children}
+    </LogoutContext.Provider>
   );
 }
 
