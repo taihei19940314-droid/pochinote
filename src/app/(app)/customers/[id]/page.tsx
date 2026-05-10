@@ -158,7 +158,15 @@ export default async function CustomerDetailPage({
       <div className="card overflow-hidden">
         <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
           <h2 className="font-display text-lg font-semibold">来店履歴</h2>
-          <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>{(bookings ?? []).length} 件</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>{(bookings ?? []).length} 件</span>
+            <Link href={`/customers/${id}/bookings/new`}>
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-opacity hover:opacity-90"
+                style={{ background: "var(--terra)", color: "white" }}>
+                + 来店記録
+              </span>
+            </Link>
+          </div>
         </div>
         {(bookings ?? []).length === 0 ? (
           <div className="px-6 py-12 text-center text-sm" style={{ color: "var(--ink-soft)" }}>

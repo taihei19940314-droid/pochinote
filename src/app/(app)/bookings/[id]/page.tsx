@@ -15,10 +15,13 @@ export const dynamic = "force-dynamic";
 
 export default async function BookingDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ created?: string }>;
 }) {
   const { id } = await params;
+  const { created } = await searchParams;
   const supabase = await createClient();
 
   const { data: booking } = await supabase
@@ -59,6 +62,12 @@ export default async function BookingDetailPage({
       >
         ← 顧客カルテに戻る
       </Link>
+
+      {created === "1" && (
+        <div className="mb-5 px-4 py-3 rounded-lg text-sm font-medium" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>
+          ✓ 来店記録を作成しました。カルテを記入できます。
+        </div>
+      )}
 
       <Link
         href={customer ? `/customers/${customer.id}` : "/customers"}
