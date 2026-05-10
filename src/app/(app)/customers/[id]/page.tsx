@@ -170,9 +170,10 @@ export default async function CustomerDetailPage({
               const staff = (b.staff as unknown) as { name: string } | null;
               const services = (b.services as string[] | null) ?? [];
               return (
-                <div
+                <Link
                   key={b.id}
-                  className="px-6 py-4"
+                  href={`/bookings/${b.id}`}
+                  className="block px-6 py-4 transition-colors hover:bg-[rgba(217,119,87,0.04)]"
                   style={{ borderTop: i > 0 ? "1px solid rgba(26,26,46,0.05)" : undefined }}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -199,7 +200,7 @@ export default async function CustomerDetailPage({
                       </div>
                     )}
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
