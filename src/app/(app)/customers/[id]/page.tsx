@@ -21,14 +21,17 @@ function rabiesExpired(date: string | null): boolean {
   return Date.now() - new Date(date).getTime() > 365 * 24 * 60 * 60 * 1000;
 }
 
+const TZ = "Asia/Tokyo";
+
 function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+  return new Date(iso).toLocaleDateString("ja-JP", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
-  return `${formatDate(iso)} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const date = d.toLocaleDateString("ja-JP", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
+  const time = d.toLocaleTimeString("ja-JP", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${date} ${time}`;
 }
 
 export const dynamic = "force-dynamic";

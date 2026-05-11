@@ -19,20 +19,25 @@ const STATUS_OPTIONS = [
   { value: "confirmed", label: "予約確定" },
 ];
 
-function toLocalValue(d: Date): string {
-  d.setSeconds(0, 0);
+function toJstValue(d: Date): string {
+  // Shift to JST wall-clock, then read via UTC getters — environment-independent
+  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${jst.getUTCFullYear()}-${pad(jst.getUTCMonth() + 1)}-${pad(jst.getUTCDate())}T${pad(jst.getUTCHours())}:${pad(jst.getUTCMinutes())}`;
 }
 
 function defaultDatetime(mode: "booking" | "record"): string {
   if (mode === "booking") {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    d.setHours(10, 0, 0, 0);
-    return toLocalValue(d);
+    // Tomorrow 10:00 JST
+    const now = new Date();
+    const tomorrowJst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    tomorrowJst.setUTCDate(tomorrowJst.getUTCDate() + 1);
+    tomorrowJst.setUTCHours(10, 0, 0, 0);
+    // tomorrowJst now holds JST 10:00 as UTC values; un-shift to get real UTC
+    const utc = new Date(tomorrowJst.getTime() - 9 * 60 * 60 * 1000);
+    return toJstValue(utc);
   }
-  return toLocalValue(new Date());
+  return toJstValue(new Date());
 }
 
 interface Pet { id: string; name: string; breed: string | null }
@@ -85,7 +90,7 @@ export default function NewBookingForm({
         customer_id: customerId,
         pet_id: petId,
         staff_id: staffId || null,
-        scheduled_at: new Date(scheduledAt).toISOString(),
+        scheduled_at: scheduledAt + ":00+09:00",
         status,
         services: services.length > 0 ? services : null,
         price: price ? parseInt(price, 10) : null,

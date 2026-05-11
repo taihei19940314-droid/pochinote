@@ -1,13 +1,11 @@
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
-}
+const TZ = "Asia/Tokyo";
 
 function dateStr(d: Date): string {
-  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
+  return d.toLocaleDateString("ja-JP", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
 function timeStr(d: Date): string {
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return d.toLocaleTimeString("ja-JP", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 export function formatBookingTime(scheduledAt: string, durationMin: number | null): string {

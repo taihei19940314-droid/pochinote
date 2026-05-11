@@ -20,10 +20,10 @@ const SERVICE_OPTIONS = [
 
 function toLocalDatetime(iso: string): string {
   const d = new Date(iso);
-  d.setSeconds(0, 0);
-  // ISO → local datetime-local value
+  // JST = UTC+9: shift to get JST wall-clock values via UTC getters
+  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${jst.getUTCFullYear()}-${pad(jst.getUTCMonth() + 1)}-${pad(jst.getUTCDate())}T${pad(jst.getUTCHours())}:${pad(jst.getUTCMinutes())}`;
 }
 
 interface Pet   { id: string; name: string; breed: string | null }
@@ -90,7 +90,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
     const { error: err } = await createClient()
       .from("bookings")
       .update({
-        scheduled_at: new Date(scheduledAt).toISOString(),
+        scheduled_at: scheduledAt + ":00+09:00",
         status,
         pet_id: petId || null,
         staff_id: staffId || null,
