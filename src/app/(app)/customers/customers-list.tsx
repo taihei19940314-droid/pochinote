@@ -148,6 +148,11 @@ export default function CustomersList({
                       {pet?.breed && (
                         <span className="text-xs" style={{ color: "var(--ink-soft)" }}>/ {pet.breed}</span>
                       )}
+                      {c.pets.length > 1 && (
+                        <span className="pill text-[10px]" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>
+                          + 他{c.pets.length - 1}匹
+                        </span>
+                      )}
                       {rabiesWarn && (
                         <span className="pill text-[10px]" style={{ background: "rgba(192,57,43,0.12)", color: "#c0392b" }}>
                           ⚠ 狂犬病ワクチン期限切れ

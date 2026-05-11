@@ -19,10 +19,20 @@ const STATUS_OPTIONS = [
   { value: "confirmed", label: "予約確定" },
 ];
 
-function nowLocalDatetime(): string {
-  const d = new Date();
+function toLocalValue(d: Date): string {
   d.setSeconds(0, 0);
-  return d.toISOString().slice(0, 16);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function defaultDatetime(mode: "booking" | "record"): string {
+  if (mode === "booking") {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(10, 0, 0, 0);
+    return toLocalValue(d);
+  }
+  return toLocalValue(new Date());
 }
 
 interface Pet { id: string; name: string; breed: string | null }
@@ -33,19 +43,21 @@ export default function NewBookingForm({
   salonId,
   pets,
   staff,
+  mode = "record",
 }: {
   customerId: string;
   salonId: string;
   pets: Pet[];
   staff: Staff[];
+  mode?: "booking" | "record";
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [scheduledAt, setScheduledAt] = useState(nowLocalDatetime());
+  const [scheduledAt, setScheduledAt] = useState(() => defaultDatetime(mode));
   const [petId, setPetId] = useState(pets[0]?.id ?? "");
-  const [status, setStatus] = useState("completed");
+  const [status, setStatus] = useState(mode === "booking" ? "confirmed" : "completed");
   const [staffId, setStaffId] = useState("");
   const [services, setServices] = useState<string[]>([]);
   const [price, setPrice] = useState("");
@@ -283,7 +295,7 @@ export default function NewBookingForm({
           className="flex-1 px-5 py-3 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
           style={{ background: "var(--terra)", color: "white" }}
         >
-          {loading ? "登録中…" : "来店記録を追加"}
+          {loading ? "登録中…" : mode === "booking" ? "予約を作成" : "来店記録を追加"}
         </button>
       </div>
 

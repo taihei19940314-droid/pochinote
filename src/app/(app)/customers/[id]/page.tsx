@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { formatBookingTime } from "@/lib/format-booking-time";
+import { getStatusBadge } from "@/lib/booking-status";
 
 // TODO: 認証実装後、ログイン中のサロンIDに置き換える
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
@@ -22,6 +24,11 @@ function rabiesExpired(date: string | null): boolean {
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  return `${formatDate(iso)} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 export const dynamic = "force-dynamic";
@@ -51,12 +58,21 @@ export default async function CustomerDetailPage({
     .select("id, name, breed, gender, birth_date, weight_kg, notes, rabies_vaccination_date")
     .eq("customer_id", id);
 
-  const { data: bookings } = await supabase
-    .from("bookings")
-    .select("id, scheduled_at, services, price, status, memo, staff:staff_id(name)")
-    .eq("customer_id", id)
-    .in("status", ["completed", "in_progress"])
-    .order("scheduled_at", { ascending: false });
+  const [{ data: bookings }, { data: upcomingBookings }] = await Promise.all([
+    supabase
+      .from("bookings")
+      .select("id, scheduled_at, services, price, status, duration_min, memo, staff:staff_id(name)")
+      .eq("customer_id", id)
+      .in("status", ["completed", "in_progress"])
+      .order("scheduled_at", { ascending: false }),
+    supabase
+      .from("bookings")
+      .select("id, scheduled_at, services, price, status, duration_min, staff:staff_id(name)")
+      .eq("customer_id", id)
+      .eq("status", "confirmed")
+      .gte("scheduled_at", new Date().toISOString())
+      .order("scheduled_at", { ascending: true }),
+  ]);
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
@@ -96,16 +112,12 @@ export default async function CustomerDetailPage({
 
       {/* Section 2: ペット情報 */}
       <div className="space-y-4 mb-5">
-        {(pets ?? []).length === 0 ? (
-          <div className="card p-6 text-sm text-center" style={{ color: "var(--ink-soft)" }}>
-            ペット情報がありません
-          </div>
-        ) : (
-          (pets ?? []).map((pet) => {
-            const warn = rabiesExpired(pet.rabies_vaccination_date);
-            return (
-              <div key={pet.id} className="card p-6">
-                <div className="flex items-center gap-2 mb-4">
+        {(pets ?? []).map((pet) => {
+          const warn = rabiesExpired(pet.rabies_vaccination_date);
+          return (
+            <div key={pet.id} className="card p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-2">
                   <div className="text-2xl w-10 h-10 flex items-center justify-center rounded-full flex-shrink-0"
                     style={{ background: "var(--paper-warm)" }}>🐕</div>
                   <div>
@@ -113,48 +125,129 @@ export default async function CustomerDetailPage({
                     {pet.breed && <div className="text-xs" style={{ color: "var(--ink-soft)" }}>{pet.breed}</div>}
                   </div>
                 </div>
-                <div className="space-y-2 text-sm">
-                  {pet.birth_date && (
-                    <div className="flex justify-between">
-                      <span style={{ color: "var(--ink-soft)" }}>年齢</span>
-                      <span className="font-medium">{calcAge(pet.birth_date)}</span>
-                    </div>
-                  )}
-                  {pet.weight_kg != null && (
-                    <div className="flex justify-between">
-                      <span style={{ color: "var(--ink-soft)" }}>体重</span>
-                      <span className="font-medium">{pet.weight_kg} kg</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center">
-                    <span style={{ color: "var(--ink-soft)" }}>狂犬病ワクチン</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {pet.rabies_vaccination_date ? formatDate(pet.rabies_vaccination_date) : "未登録"}
-                      </span>
-                      {warn && (
-                        <span className="pill text-[10px]" style={{ background: "rgba(192,57,43,0.12)", color: "#c0392b" }}>
-                          ⚠ 期限切れ
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {pet.notes && (
-                    <div className="mt-3 pt-3" style={{ borderTop: "1px solid rgba(26,26,46,0.06)" }}>
-                      <div className="text-xs mb-1" style={{ color: "var(--ink-soft)" }}>注意事項</div>
-                      <span className="pill text-[11px]" style={{ background: "rgba(200,155,60,0.15)", color: "var(--gold)" }}>
-                        ⚠ {pet.notes}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <Link href={`/customers/${id}/pets/${pet.id}/edit`}>
+                  <span className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
+                    style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink-soft)" }}>
+                    ✏️ 編集
+                  </span>
+                </Link>
               </div>
-            );
-          })
+              <div className="space-y-2 text-sm">
+                {pet.birth_date && (
+                  <div className="flex justify-between">
+                    <span style={{ color: "var(--ink-soft)" }}>年齢</span>
+                    <span className="font-medium">
+                        {calcAge(pet.birth_date)}
+                        <span className="font-normal text-xs ml-1" style={{ color: "var(--ink-soft)" }}>({formatDate(pet.birth_date)}生)</span>
+                      </span>
+                  </div>
+                )}
+                {pet.weight_kg != null && (
+                  <div className="flex justify-between">
+                    <span style={{ color: "var(--ink-soft)" }}>体重</span>
+                    <span className="font-medium">{pet.weight_kg} kg</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span style={{ color: "var(--ink-soft)" }}>狂犬病ワクチン</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">
+                      {pet.rabies_vaccination_date ? formatDate(pet.rabies_vaccination_date) : "未登録"}
+                    </span>
+                    {warn && (
+                      <span className="pill text-[10px]" style={{ background: "rgba(192,57,43,0.12)", color: "#c0392b" }}>
+                        ⚠ 期限切れ
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {pet.notes && (
+                  <div className="mt-3 pt-3" style={{ borderTop: "1px solid rgba(26,26,46,0.06)" }}>
+                    <div className="text-xs mb-1" style={{ color: "var(--ink-soft)" }}>注意事項</div>
+                    <span className="pill text-[11px]" style={{ background: "rgba(200,155,60,0.15)", color: "var(--gold)" }}>
+                      ⚠ {pet.notes}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* ペット追加カード */}
+        <Link href={`/customers/${id}/pets/new`}>
+          <div className="rounded-xl p-5 flex items-center gap-3 cursor-pointer transition-colors hover:bg-[rgba(217,119,87,0.04)]"
+            style={{ border: "2px dashed rgba(217,119,87,0.35)" }}>
+            <div className="w-10 h-10 flex items-center justify-center rounded-full flex-shrink-0"
+              style={{ background: "rgba(217,119,87,0.08)" }}>
+              <span className="text-xl" style={{ color: "var(--terra)" }}>+</span>
+            </div>
+            <div>
+              <div className="text-sm font-semibold" style={{ color: "var(--terra)" }}>ペットを追加</div>
+              <div className="text-xs" style={{ color: "var(--ink-soft)" }}>2匹目以降のペットを登録できます</div>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Section 3: 次回予約 */}
+      <div className="card overflow-hidden mb-5">
+        <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
+          <h2 className="font-display text-lg font-semibold">次回予約</h2>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>{(upcomingBookings ?? []).length} 件</span>
+            <Link href={`/customers/${id}/bookings/new?mode=booking`}>
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-opacity hover:opacity-90"
+                style={{ background: "var(--terra)", color: "white" }}>
+                + 予約作成
+              </span>
+            </Link>
+          </div>
+        </div>
+        {(upcomingBookings ?? []).length === 0 ? (
+          <div className="px-6 py-8 text-center text-sm" style={{ color: "var(--ink-soft)" }}>
+            次回予約はありません
+          </div>
+        ) : (
+          <div>
+            {(upcomingBookings ?? []).map((b, i) => {
+              const staff = (b.staff as unknown) as { name: string } | null;
+              const services = (b.services as string[] | null) ?? [];
+              return (
+                <Link
+                  key={b.id}
+                  href={`/bookings/${b.id}`}
+                  className="block px-6 py-4 transition-colors hover:bg-[rgba(58,58,106,0.04)]"
+                  style={{ borderTop: i > 0 ? "1px solid rgba(26,26,46,0.05)" : undefined }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-mono text-sm font-semibold">{formatBookingTime(b.scheduled_at, b.duration_min as number | null)}</span>
+                        <span className="pill text-[10px]" style={{ background: "rgba(58,58,106,0.12)", color: "var(--indigo)" }}>予約確定</span>
+                      </div>
+                      {services.length > 0 && (
+                        <div className="text-sm mb-0.5">{services.join("・")}</div>
+                      )}
+                      <div className="flex items-center gap-3 text-xs" style={{ color: "var(--ink-soft)" }}>
+                        {staff?.name && <span>担当: {staff.name}</span>}
+                        {(b.duration_min as number | null) != null && <span>{b.duration_min as number}分</span>}
+                      </div>
+                    </div>
+                    {(b.price as number | null) != null && (
+                      <div className="font-mono text-sm font-semibold flex-shrink-0">
+                        ¥{(b.price as number).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {/* Section 3: 来店履歴 */}
+      {/* Section 4: 来店履歴 */}
       <div className="card overflow-hidden">
         <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
           <h2 className="font-display text-lg font-semibold">来店履歴</h2>
@@ -187,12 +280,10 @@ export default async function CustomerDetailPage({
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-mono text-sm font-semibold">{formatDate(b.scheduled_at)}</span>
-                        {b.status === "in_progress" ? (
-                          <span className="pill text-[10px]" style={{ background: "rgba(217,119,87,0.15)", color: "var(--terra-deep)" }}>施術中</span>
-                        ) : (
-                          <span className="pill text-[10px]" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>完了</span>
-                        )}
+                        <span className="font-mono text-sm font-semibold">{formatBookingTime(b.scheduled_at, b.duration_min as number | null)}</span>
+                        {(() => { const badge = getStatusBadge(b.status as string); return (
+                          <span className="pill text-[10px]" style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
+                        ); })()}
                       </div>
                       {services.length > 0 && (
                         <div className="text-sm mb-0.5">{services.join("・")}</div>

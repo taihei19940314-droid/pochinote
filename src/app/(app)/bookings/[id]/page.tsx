@@ -2,14 +2,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import BookingKarte from "./booking-karte";
+import { formatBookingTime } from "@/lib/format-booking-time";
+import { getStatusBadge } from "@/lib/booking-status";
 
 // TODO: 認証実装後、ログイン中のサロンIDに置き換える
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
-
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +15,10 @@ export default async function BookingDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ created?: string }>;
+  searchParams: Promise<{ created?: string; updated?: string }>;
 }) {
   const { id } = await params;
-  const { created } = await searchParams;
+  const { created, updated } = await searchParams;
   const supabase = await createClient();
 
   const { data: booking } = await supabase
@@ -42,19 +39,13 @@ export default async function BookingDetailPage({
   const pet = (booking.pet as unknown) as { id: string; name: string; species: string | null; breed: string | null } | null;
   const staff = (booking.staff as unknown) as { name: string } | null;
   const services = (booking.services as string[] | null) ?? [];
-
-  const statusBadge = {
-    completed: { label: "完了", bg: "rgba(107,142,127,0.15)", color: "var(--sage)" },
-    in_progress: { label: "施術中", bg: "rgba(217,119,87,0.15)", color: "var(--terra-deep)" },
-    confirmed: { label: "予約確定", bg: "rgba(58,58,106,0.12)", color: "var(--indigo)" },
-  }[booking.status as string] ?? { label: booking.status, bg: "rgba(26,26,46,0.08)", color: "var(--ink-soft)" };
-
+  const statusBadge = getStatusBadge(booking.status as string);
   const petLabel = [pet?.name, pet?.breed ?? pet?.species].filter(Boolean).join(" / ");
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
 
-      {/* Back + title */}
+      {/* Back */}
       <Link
         href={customer ? `/customers/${customer.id}` : "/customers"}
         className="inline-flex items-center gap-1 text-sm mb-4"
@@ -66,6 +57,11 @@ export default async function BookingDetailPage({
       {created === "1" && (
         <div className="mb-5 px-4 py-3 rounded-lg text-sm font-medium" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>
           ✓ 来店記録を作成しました。カルテを記入できます。
+        </div>
+      )}
+      {updated === "1" && (
+        <div className="mb-5 px-4 py-3 rounded-lg text-sm font-medium" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>
+          ✓ 予約情報を更新しました
         </div>
       )}
 
@@ -81,11 +77,19 @@ export default async function BookingDetailPage({
 
       {/* 基本情報 */}
       <div className="card p-6 mb-5">
-        <h2 className="font-display text-lg font-semibold mb-4">基本情報</h2>
+        <div className="flex items-start justify-between mb-4">
+          <h2 className="font-display text-lg font-semibold">基本情報</h2>
+          <Link href={`/bookings/${id}/edit`}>
+            <span className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
+              style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink-soft)" }}>
+              ✏️ 編集
+            </span>
+          </Link>
+        </div>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between items-center">
             <span style={{ color: "var(--ink-soft)" }}>来店日時</span>
-            <span className="font-mono font-medium">{formatDateTime(booking.scheduled_at)}</span>
+            <span className="font-mono font-medium">{formatBookingTime(booking.scheduled_at, booking.duration_min as number | null)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span style={{ color: "var(--ink-soft)" }}>ステータス</span>
@@ -118,7 +122,7 @@ export default async function BookingDetailPage({
         </div>
       </div>
 
-      {/* カルテ(Client Component) */}
+      {/* カルテ */}
       <BookingKarte bookingId={id} initialMemo={booking.memo as string | null} />
     </div>
   );
