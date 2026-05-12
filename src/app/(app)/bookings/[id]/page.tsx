@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import BookingKarte from "./booking-karte";
+import { CancelButton, DeleteButton } from "./booking-actions";
 import { formatBookingTime } from "@/lib/format-booking-time";
 import { getStatusBadge } from "@/lib/booking-status";
 
@@ -15,10 +16,10 @@ export default async function BookingDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ created?: string; updated?: string }>;
+  searchParams: Promise<{ created?: string; updated?: string; cancelled?: string }>;
 }) {
   const { id } = await params;
-  const { created, updated } = await searchParams;
+  const { created, updated, cancelled } = await searchParams;
   const supabase = await createClient();
 
   const { data: booking } = await supabase
@@ -64,6 +65,11 @@ export default async function BookingDetailPage({
           ✓ 予約情報を更新しました
         </div>
       )}
+      {cancelled === "1" && (
+        <div className="mb-5 px-4 py-3 rounded-lg text-sm font-medium" style={{ background: "rgba(26,26,46,0.07)", color: "var(--ink-soft)" }}>
+          ✓ 予約をキャンセルしました
+        </div>
+      )}
 
       <Link
         href={customer ? `/customers/${customer.id}` : "/customers"}
@@ -79,12 +85,15 @@ export default async function BookingDetailPage({
       <div className="card p-6 mb-5">
         <div className="flex items-start justify-between mb-4">
           <h2 className="font-display text-lg font-semibold">基本情報</h2>
-          <Link href={`/bookings/${id}/edit`}>
-            <span className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
-              style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink-soft)" }}>
-              ✏️ 編集
-            </span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <CancelButton bookingId={id} status={booking.status as string} />
+            <Link href={`/bookings/${id}/edit`}>
+              <span className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
+                style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink-soft)" }}>
+                ✏️ 編集
+              </span>
+            </Link>
+          </div>
         </div>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between items-center">
@@ -124,6 +133,9 @@ export default async function BookingDetailPage({
 
       {/* カルテ */}
       <BookingKarte bookingId={id} initialMemo={booking.memo as string | null} />
+
+      {/* 削除 */}
+      <DeleteButton bookingId={id} customerId={customer?.id ?? ""} />
     </div>
   );
 }

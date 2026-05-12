@@ -41,10 +41,10 @@ export default async function CustomerDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ updated?: string }>;
+  searchParams: Promise<{ updated?: string; deleted?: string }>;
 }) {
   const { id } = await params;
-  const { updated } = await searchParams;
+  const { updated, deleted } = await searchParams;
   const supabase = await createClient();
 
   const { data: customer } = await supabase
@@ -66,7 +66,7 @@ export default async function CustomerDetailPage({
       .from("bookings")
       .select("id, scheduled_at, services, price, status, duration_min, memo, staff:staff_id(name)")
       .eq("customer_id", id)
-      .in("status", ["completed", "in_progress"])
+      .in("status", ["completed", "in_progress", "cancelled"])
       .order("scheduled_at", { ascending: false }),
     supabase
       .from("bookings")
@@ -77,6 +77,14 @@ export default async function CustomerDetailPage({
       .order("scheduled_at", { ascending: true }),
   ]);
 
+  // キャンセル率の集計 (confirmed は除く)
+  const allBookings = bookings ?? [];
+  const visitCount = allBookings.filter((b) => b.status === "completed" || b.status === "in_progress").length;
+  const cancelCount = allBookings.filter((b) => b.status === "cancelled").length;
+  const totalForRate = visitCount + cancelCount;
+  const cancelRate = totalForRate > 0 ? Math.round((cancelCount / totalForRate) * 100) : 0;
+  const showStats = totalForRate >= 3;
+
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
       <Link href="/customers" className="inline-flex items-center gap-1 text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
@@ -86,6 +94,11 @@ export default async function CustomerDetailPage({
       {updated === "1" && (
         <div className="mb-5 px-4 py-3 rounded-lg text-sm font-medium" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>
           ✓ 更新しました
+        </div>
+      )}
+      {deleted === "1" && (
+        <div className="mb-5 px-4 py-3 rounded-lg text-sm font-medium" style={{ background: "rgba(26,26,46,0.07)", color: "var(--ink-soft)" }}>
+          予約を削除しました
         </div>
       )}
 
@@ -110,6 +123,18 @@ export default async function CustomerDetailPage({
             <span style={{ color: "var(--ink-soft)" }}>LINE ID</span>
             <span className="font-medium">{customer.line_user_id ?? "未登録"}</span>
           </div>
+          {showStats && (
+            <div className="flex justify-between pt-2 mt-2" style={{ borderTop: "1px solid rgba(26,26,46,0.06)" }}>
+              <span style={{ color: "var(--ink-soft)" }}>来店統計</span>
+              <span
+                className="font-medium text-right"
+                style={{ color: cancelRate >= 30 ? "#c0392b" : "var(--ink-soft)" }}
+              >
+                来店 {visitCount} 回 / キャンセル {cancelCount} 回
+                <span className="ml-1 text-xs">(キャンセル率 {cancelRate}%)</span>
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -255,7 +280,9 @@ export default async function CustomerDetailPage({
         <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
           <h2 className="font-display text-lg font-semibold">来店履歴</h2>
           <div className="flex items-center gap-3">
-            <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>{(bookings ?? []).length} 件</span>
+            <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>
+              {allBookings.length} 件{cancelCount > 0 && `(うちキャンセル ${cancelCount} 件)`}
+            </span>
             <Link href={`/customers/${id}/bookings/new`}>
               <span className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-opacity hover:opacity-90"
                 style={{ background: "var(--terra)", color: "white" }}>
@@ -264,13 +291,14 @@ export default async function CustomerDetailPage({
             </Link>
           </div>
         </div>
-        {(bookings ?? []).length === 0 ? (
+        {allBookings.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm" style={{ color: "var(--ink-soft)" }}>
             まだ来店履歴がありません
           </div>
         ) : (
           <div>
-            {(bookings ?? []).map((b, i) => {
+            {allBookings.map((b, i) => {
+              const isCancelled = b.status === "cancelled";
               const staff = (b.staff as unknown) as { name: string } | null;
               const services = (b.services as string[] | null) ?? [];
               return (
@@ -278,7 +306,10 @@ export default async function CustomerDetailPage({
                   key={b.id}
                   href={`/bookings/${b.id}`}
                   className="block px-6 py-4 transition-colors hover:bg-[rgba(217,119,87,0.04)]"
-                  style={{ borderTop: i > 0 ? "1px solid rgba(26,26,46,0.05)" : undefined }}
+                  style={{
+                    borderTop: i > 0 ? "1px solid rgba(26,26,46,0.05)" : undefined,
+                    opacity: isCancelled ? 0.5 : 1,
+                  }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
