@@ -158,7 +158,7 @@ export default function DashboardPage() {
               <div className="flex-1">
                 <div className="font-medium text-sm" style={{ color: "var(--terra-deep)" }}>空き枠 — 90分</div>
                 <div className="text-xs" style={{ color: "var(--ink-soft)" }}>
-                  Pochinote が <span className="font-semibold" style={{ color: "var(--ink)" }}>4 名</span> に LINE オファー送信を提案中
+                  トリエルが <span className="font-semibold" style={{ color: "var(--ink)" }}>4 名</span> に LINE オファー送信を提案中
                 </div>
               </div>
               <button className="text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full" style={{ background: "var(--ink)", color: "var(--paper)" }}>
@@ -228,7 +228,7 @@ export default function DashboardPage() {
               <span className="pill" style={{ background: "rgba(217,119,87,0.2)", color: "var(--terra)" }}>14:00〜15:30 90分</span>
             </div>
             <div className="text-xs mb-4 leading-relaxed" style={{ opacity: 0.7 }}>
-              Pochinote が選んだ常連 <span className="font-semibold" style={{ opacity: 1 }}>4 名</span>。LINEで限定オファーを配信できます。
+              トリエルが選んだ常連 <span className="font-semibold" style={{ opacity: 1 }}>4 名</span>。LINEで限定オファーを配信できます。
             </div>
 
             <div className="space-y-2">

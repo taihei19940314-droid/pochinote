@@ -17,8 +17,8 @@ export default function HomePage() {
               <circle cx="26" cy="14" r="2.5" fill="var(--ink)" />
             </svg>
             <div>
-              <div className="font-display text-lg font-semibold leading-none tracking-tight">Pochinote</div>
-              <div className="text-[9px] tracking-[0.18em] uppercase mt-0.5" style={{ color: "var(--ink-soft)" }}>for groomers</div>
+              <div className="font-display text-lg font-semibold leading-none tracking-tight">Triel</div>
+              <div className="text-[9px] tracking-[0.08em] mt-0.5" style={{ color: "var(--ink-soft)" }}>トリエル · for groomers</div>
             </div>
           </div>
           <Link href="/dashboard">
@@ -47,7 +47,7 @@ export default function HomePage() {
 
           <p className="text-lg leading-relaxed max-w-xl mb-10" style={{ color: "var(--ink-soft)" }}>
             LINE集客 × 空き枠自動販売 × ビフォーアフター活用。<br />
-            <span className="font-semibold" style={{ color: "var(--ink)" }}>Pochinote は、トリマーのための"接客しないセールスエンジン"です。</span>
+            <span className="font-semibold" style={{ color: "var(--ink)" }}>トリエルは、トリマーのための"接客しないセールスエンジン"です。</span>
           </p>
 
           <div className="flex flex-wrap items-center gap-4 mb-14">
@@ -85,7 +85,7 @@ export default function HomePage() {
       <section className="py-24 border-t" style={{ borderColor: "rgba(26,26,46,0.06)", background: "var(--paper-warm)" }}>
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-14">
-            <div className="text-xs tracking-[0.2em] uppercase mb-3" style={{ color: "var(--ink-soft)" }}>What Pochinote does</div>
+            <div className="text-xs tracking-[0.2em] uppercase mb-3" style={{ color: "var(--ink-soft)" }}>What Triel does</div>
             <h2 className="font-display text-4xl font-light tracking-tight">
               売上を、寝ている間にも<span className="italic" style={{ color: "var(--terra)" }}>育てる</span>。
             </h2>
@@ -128,7 +128,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="py-8 border-t text-center text-xs" style={{ borderColor: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>
-        © 2026 Pochinote · トリマーのための SaaS
+        © 2026 Triel · トリマーのための SaaS
       </footer>
 
     </div>

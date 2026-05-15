@@ -40,7 +40,7 @@ export default function AdminGate({ children }: Props) {
     return (
       <div style={{ background: "var(--paper)", minHeight: "100vh" }} className="flex items-center justify-center">
         <div className="card p-10 w-full max-w-sm text-center">
-          <div className="font-display text-2xl font-semibold mb-1">Pochinote Admin</div>
+          <div className="font-display text-2xl font-semibold mb-1">Triel Admin</div>
           <p className="text-sm mb-8" style={{ color: "var(--ink-soft)" }}>パスワードを入力してください</p>
           <form onSubmit={handleLogin} className="flex flex-col gap-3">
             <input

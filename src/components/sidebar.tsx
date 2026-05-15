@@ -24,9 +24,9 @@ export function Sidebar() {
           <circle cx="26" cy="14" r="2.5" fill="var(--ink)" />
         </svg>
         <div>
-          <div className="font-display text-lg font-semibold leading-none tracking-tight">Pochinote</div>
-          <div className="text-[10px] tracking-[0.15em] uppercase mt-0.5" style={{ color: "var(--ink-soft, #8a8a9a)" }}>
-            for groomers
+          <div className="font-display text-lg font-semibold leading-none tracking-tight">Triel</div>
+          <div className="text-[10px] tracking-[0.08em] mt-0.5" style={{ color: "var(--ink-soft, #8a8a9a)" }}>
+            トリエル · for groomers
           </div>
         </div>
       </div>

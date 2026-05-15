@@ -36,7 +36,7 @@ export default function SignupsDashboard({ signups }: Props) {
           <div>
             <div className="text-xs tracking-[0.2em] uppercase mb-2" style={{ color: "var(--ink-soft)" }}>Admin · β Signups</div>
             <h1 className="font-display text-4xl font-light tracking-tight">β募集 状況</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--ink-soft)" }}>Pochinote のβ50店舗、限定募集進捗</p>
+            <p className="text-sm mt-1" style={{ color: "var(--ink-soft)" }}>トリエルのβ50店舗、限定募集進捗</p>
           </div>
           <button
             onClick={logout}
