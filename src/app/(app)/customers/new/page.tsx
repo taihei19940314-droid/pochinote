@@ -94,7 +94,7 @@ export default function NewCustomerPage() {
     router.push("/customers?registered=1");
   }
 
-  const inputClass = "w-full px-3 py-3 rounded-lg border text-base outline-none focus:ring-1";
+  const inputClass = "w-full px-3 py-3 min-h-[48px] rounded-lg border text-base outline-none focus:ring-1";
   const inputStyle = { borderColor: "rgba(26,26,46,0.15)", background: "white" };
   const labelClass = "block text-xs font-medium mb-1.5";
   const labelStyle = { color: "var(--ink-soft)" };

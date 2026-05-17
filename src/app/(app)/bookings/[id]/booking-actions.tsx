@@ -67,7 +67,7 @@ export function DeleteButton({ bookingId, customerId }: Pick<Props, "bookingId" 
   }
 
   return (
-    <div className="mt-6 text-center">
+    <div className="mt-6 mb-8 text-center">
       {error && (
         <p className="text-xs mb-2" style={{ color: "#c0392b" }}>{error}</p>
       )}
@@ -75,7 +75,7 @@ export function DeleteButton({ bookingId, customerId }: Pick<Props, "bookingId" 
         onClick={handleDelete}
         disabled={loading}
         className="text-xs disabled:opacity-50 transition-opacity hover:opacity-70"
-        style={{ color: "var(--ink-soft)" }}
+        style={{ color: "#78716c" }}
       >
         {loading ? "削除中…" : "🗑️ この予約を完全に削除する"}
       </button>
