@@ -109,7 +109,7 @@ export default function NewBookingForm({
     router.push(`/bookings/${data.id}?created=1`);
   }
 
-  const inputClass = "w-full px-3 py-2.5 rounded-lg border text-sm outline-none focus:ring-1";
+  const inputClass = "w-full px-3 py-3 rounded-lg border text-base outline-none focus:ring-1";
   const inputStyle = { borderColor: "rgba(26,26,46,0.15)", background: "white" };
   const labelClass = "block text-xs font-medium mb-1.5";
   const labelStyle = { color: "var(--ink-soft)" };
@@ -236,7 +236,7 @@ export default function NewBookingForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
               <label className={labelClass} style={labelStyle}>料金 (円)</label>
               <input
@@ -289,7 +289,7 @@ export default function NewBookingForm({
 
       <div className="flex gap-3">
         <Link href={`/customers/${customerId}`} className="flex-1">
-          <span className="block w-full text-center px-5 py-3 rounded-lg text-sm font-semibold border transition-colors hover:bg-black/5"
+          <span className="block w-full text-center px-5 py-3.5 rounded-lg text-sm font-semibold border transition-colors hover:bg-black/5"
             style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink)" }}>
             キャンセル
           </span>
@@ -297,7 +297,7 @@ export default function NewBookingForm({
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 px-5 py-3 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="flex-1 px-5 py-3.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
           style={{ background: "var(--terra)", color: "white" }}
         >
           {loading ? "登録中…" : mode === "booking" ? "予約を作成" : "来店記録を追加"}

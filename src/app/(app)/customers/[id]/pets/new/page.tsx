@@ -47,7 +47,7 @@ export default function NewPetPage({ params }: { params: Promise<{ id: string }>
     router.push(`/customers/${id}?updated=1`);
   }
 
-  const inputClass = "w-full px-3 py-2.5 rounded-lg border text-sm outline-none focus:ring-1";
+  const inputClass = "w-full px-3 py-3 rounded-lg border text-base outline-none focus:ring-1";
   const inputStyle = { borderColor: "rgba(26,26,46,0.15)", background: "white" };
   const labelClass = "block text-xs font-medium mb-1.5";
   const labelStyle = { color: "var(--ink-soft)" };
@@ -57,7 +57,7 @@ export default function NewPetPage({ params }: { params: Promise<{ id: string }>
       <Link href={`/customers/${id}`} className="inline-flex items-center gap-1 text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
         ← 顧客詳細に戻る
       </Link>
-      <h1 className="font-display text-3xl font-semibold tracking-tight mb-8">ペットを追加</h1>
+      <h1 className="font-display text-2xl lg:text-3xl font-semibold tracking-tight mb-8">ペットを追加</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="card p-6">
@@ -72,7 +72,7 @@ export default function NewPetPage({ params }: { params: Promise<{ id: string }>
               <input type="text" value={pet.breed} onChange={(e) => setP("breed", e.target.value)}
                 placeholder="トイプードル" className={inputClass} style={inputStyle} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <label className={labelClass} style={labelStyle}>生年月日</label>
                 <input type="date" value={pet.birth_date} onChange={(e) => setP("birth_date", e.target.value)}
@@ -107,13 +107,13 @@ export default function NewPetPage({ params }: { params: Promise<{ id: string }>
 
         <div className="flex gap-3">
           <Link href={`/customers/${id}`} className="flex-1">
-            <span className="block w-full text-center px-5 py-3 rounded-lg text-sm font-semibold border transition-colors hover:bg-black/5"
+            <span className="block w-full text-center px-5 py-3.5 rounded-lg text-sm font-semibold border transition-colors hover:bg-black/5"
               style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink)" }}>
               キャンセル
             </span>
           </Link>
           <button type="submit" disabled={saving}
-            className="flex-1 px-5 py-3 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="flex-1 px-5 py-3.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
             style={{ background: "var(--terra)", color: "white" }}>
             {saving ? "追加中…" : "ペットを追加"}
           </button>

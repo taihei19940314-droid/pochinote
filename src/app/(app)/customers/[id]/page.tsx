@@ -86,7 +86,7 @@ export default async function CustomerDetailPage({
   const showStats = totalForRate >= 3;
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-3xl mx-auto py-6 lg:py-8 px-3 lg:px-4">
       <Link href="/customers" className="inline-flex items-center gap-1 text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
         ← 顧客カルテに戻る
       </Link>
@@ -113,8 +113,8 @@ export default async function CustomerDetailPage({
             </span>
           </Link>
         </div>
-        <h1 className="font-display text-3xl font-light tracking-tight mb-4">{customer.name}</h1>
-        <div className="space-y-2 text-sm">
+        <h1 className="font-display text-2xl lg:text-3xl font-light tracking-tight mb-4">{customer.name}</h1>
+        <div className="space-y-2 text-base lg:text-sm">
           <div className="flex justify-between">
             <span style={{ color: "var(--ink-soft)" }}>電話番号</span>
             <span className="font-medium">{customer.phone ?? "未登録"}</span>
@@ -324,7 +324,7 @@ export default async function CustomerDetailPage({
                       )}
                       <div className="flex items-center gap-3 text-xs" style={{ color: "var(--ink-soft)" }}>
                         {staff?.name && <span>担当: {staff.name}</span>}
-                        {b.memo && <span>{b.memo}</span>}
+                        {b.memo && <span className="truncate max-w-[160px]">{b.memo}</span>}
                       </div>
                     </div>
                     {b.price != null && (

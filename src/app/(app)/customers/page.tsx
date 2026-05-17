@@ -47,12 +47,12 @@ export default async function CustomersPage({
   }));
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-2">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-3xl font-semibold tracking-tight">顧客カルテ</h1>
+    <div className="max-w-3xl mx-auto py-6 lg:py-8 px-0 lg:px-2">
+      <div className="flex items-center justify-between mb-5 lg:mb-6 px-1 lg:px-0">
+        <h1 className="font-display text-2xl lg:text-3xl font-semibold tracking-tight">顧客カルテ</h1>
         <Link href="/customers/new">
-          <span className="px-4 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
-            style={{ background: "var(--terra)", color: "white" }}>
+          <span className="inline-flex items-center px-4 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{ background: "var(--terra)", color: "white", minHeight: 44 }}>
             + 新規登録
           </span>
         </Link>

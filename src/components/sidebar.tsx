@@ -13,7 +13,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex flex-col w-64 h-screen border-r" style={{ background: "var(--paper)" }}>
+    <aside className="hidden lg:flex flex-col w-64 h-screen border-r flex-shrink-0" style={{ background: "var(--paper)" }}>
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-5 border-b" style={{ borderColor: "var(--ink-soft, rgba(26,26,46,0.1))" }}>
         <svg width="28" height="28" viewBox="0 0 32 32" fill="none">

@@ -34,7 +34,7 @@ export default function BookingKarte({
   }
 
   return (
-    <div className="card p-6">
+    <div className="card p-4 lg:p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-lg font-semibold">カルテ</h2>
         {saved && (
@@ -49,7 +49,7 @@ export default function BookingKarte({
         onChange={(e) => { setMemo(e.target.value); setSaved(false); }}
         rows={8}
         placeholder="まだカルテが記入されていません。次回への申し送りや当日の様子を記録できます。"
-        className="w-full px-3 py-2.5 rounded-lg border text-sm outline-none resize-none focus:ring-1 leading-relaxed"
+        className="w-full px-3 py-3 rounded-lg border text-base lg:text-sm outline-none resize-none focus:ring-1 leading-relaxed"
         style={{ borderColor: "rgba(26,26,46,0.15)", background: "var(--paper-warm)", color: "var(--ink)" }}
       />
 
@@ -60,8 +60,8 @@ export default function BookingKarte({
       <button
         onClick={handleSave}
         disabled={saving}
-        className="mt-4 w-full py-3 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
-        style={{ background: "var(--terra)", color: "white" }}
+        className="mt-4 w-full rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+        style={{ background: "var(--terra)", color: "white", minHeight: 48, paddingTop: 12, paddingBottom: 12 }}
       >
         {saving ? "保存中…" : "保存する"}
       </button>

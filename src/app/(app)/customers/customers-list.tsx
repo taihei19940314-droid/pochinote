@@ -80,34 +80,35 @@ export default function CustomersList({
         </div>
       )}
 
-      {/* Search */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="飼い主名・ペット名で検索..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-lg border text-sm outline-none"
-          style={{ borderColor: "rgba(26,26,46,0.12)", background: "white", color: "var(--ink)" }}
-        />
-      </div>
+      {/* Search + Filter — sticky on mobile */}
+      <div className="sticky top-0 z-10 pb-3 pt-1 lg:static lg:pb-0 lg:pt-0" style={{ background: "var(--paper)" }}>
+        <div className="mb-3 px-1 lg:px-0">
+          <input
+            type="text"
+            placeholder="飼い主名・ペット名で検索..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full px-4 rounded-lg border text-base outline-none"
+            style={{ borderColor: "rgba(26,26,46,0.12)", background: "white", color: "var(--ink)", minHeight: 44, paddingTop: 10, paddingBottom: 10 }}
+          />
+        </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-5">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setFilter(t.key)}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
-            style={
-              filter === t.key
-                ? { background: "var(--terra)", color: "white" }
-                : { background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }
-            }
-          >
-            {t.label}
-          </button>
-        ))}
+        <div className="flex gap-2 mb-1 px-1 lg:px-0 overflow-x-auto no-scrollbar">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setFilter(t.key)}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors whitespace-nowrap flex-shrink-0"
+              style={
+                filter === t.key
+                  ? { background: "var(--terra)", color: "white" }
+                  : { background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }
+              }
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* List */}
@@ -125,7 +126,7 @@ export default function CustomersList({
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 px-1 lg:px-0">
           {filtered.map((c) => {
             const pet = c.pets[0];
             const days = daysSince(c.lastVisitDate);
@@ -135,7 +136,7 @@ export default function CustomersList({
             return (
               <Link key={c.id} href={`/customers/${c.id}`}>
                 <div
-                  className="card p-5 flex items-center gap-4 cursor-pointer transition-all hover:shadow-md"
+                  className="card p-4 lg:p-5 flex items-center gap-4 cursor-pointer transition-all hover:shadow-md"
                   style={{ borderLeft: `3px solid ${urgent ? "var(--terra)" : "transparent"}` }}
                 >
                   <div className="text-3xl w-12 h-12 flex items-center justify-center rounded-full flex-shrink-0"
@@ -144,9 +145,9 @@ export default function CustomersList({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                      <span className="font-semibold text-sm">{pet?.name ?? "—"}</span>
+                      <span className="font-semibold text-base lg:text-sm">{pet?.name ?? "—"}</span>
                       {pet?.breed && (
-                        <span className="text-xs" style={{ color: "var(--ink-soft)" }}>/ {pet.breed}</span>
+                        <span className="text-sm lg:text-xs" style={{ color: "var(--ink-soft)" }}>/ {pet.breed}</span>
                       )}
                       {c.pets.length > 1 && (
                         <span className="pill text-[10px]" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>
@@ -155,11 +156,11 @@ export default function CustomersList({
                       )}
                       {rabiesWarn && (
                         <span className="pill text-[10px]" style={{ background: "rgba(192,57,43,0.12)", color: "#c0392b" }}>
-                          ⚠ 狂犬病ワクチン期限切れ
+                          ⚠ 期限切れ
                         </span>
                       )}
                     </div>
-                    <div className="text-xs" style={{ color: "var(--ink-soft)" }}>{c.name}</div>
+                    <div className="text-sm lg:text-xs" style={{ color: "var(--ink-soft)" }}>{c.name}</div>
                     {pet?.notes && (
                       <div className="text-xs mt-0.5 pill" style={{ background: "rgba(200,155,60,0.15)", color: "var(--gold)" }}>
                         ⚠ {pet.notes.slice(0, 20)}{pet.notes.length > 20 ? "…" : ""}
@@ -168,9 +169,9 @@ export default function CustomersList({
                   </div>
                   <div className="text-right flex-shrink-0 space-y-1">
                     {days === null ? (
-                      <div className="text-xs font-mono" style={{ color: "var(--terra)" }}>未来店</div>
+                      <div className="text-sm lg:text-xs font-mono" style={{ color: "var(--terra)" }}>未来店</div>
                     ) : (
-                      <div className="text-xs font-mono" style={{ color: urgent ? "var(--terra)" : "var(--ink-soft)" }}>
+                      <div className="text-sm lg:text-xs font-mono" style={{ color: urgent ? "var(--terra)" : "var(--ink-soft)" }}>
                         {days}日前
                       </div>
                     )}

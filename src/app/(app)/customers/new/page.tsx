@@ -94,17 +94,17 @@ export default function NewCustomerPage() {
     router.push("/customers?registered=1");
   }
 
-  const inputClass = "w-full px-3 py-2.5 rounded-lg border text-sm outline-none focus:ring-1";
+  const inputClass = "w-full px-3 py-3 rounded-lg border text-base outline-none focus:ring-1";
   const inputStyle = { borderColor: "rgba(26,26,46,0.15)", background: "white" };
   const labelClass = "block text-xs font-medium mb-1.5";
   const labelStyle = { color: "var(--ink-soft)" };
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
+    <div className="max-w-2xl mx-auto py-6 lg:py-8 px-3 lg:px-4">
       <Link href="/customers" className="inline-flex items-center gap-1 text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
         ← 顧客一覧に戻る
       </Link>
-      <h1 className="font-display text-3xl font-semibold tracking-tight mb-8">新規顧客登録</h1>
+      <h1 className="font-display text-2xl lg:text-3xl font-semibold tracking-tight mb-8">新規顧客登録</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -162,7 +162,7 @@ export default function NewCustomerPage() {
                 <input type="text" value={pet.breed} onChange={(e) => setP(index, "breed", e.target.value)}
                   placeholder="トイプードル" className={inputClass} style={inputStyle} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass} style={labelStyle}>生年月日</label>
                   <input type="date" value={pet.birth_date} onChange={(e) => setP(index, "birth_date", e.target.value)}
@@ -170,7 +170,7 @@ export default function NewCustomerPage() {
                 </div>
                 <div>
                   <label className={labelClass} style={labelStyle}>体重 (kg)</label>
-                  <input type="number" step="0.1" min="0" value={pet.weight_kg} onChange={(e) => setP(index, "weight_kg", e.target.value)}
+                  <input type="number" step="0.1" min="0" inputMode="decimal" value={pet.weight_kg} onChange={(e) => setP(index, "weight_kg", e.target.value)}
                     placeholder="3.2" className={inputClass} style={inputStyle} />
                 </div>
               </div>
@@ -213,12 +213,12 @@ export default function NewCustomerPage() {
         <div className="flex gap-3">
           <Link href="/customers" className="flex-1">
             <span className="block w-full text-center px-5 py-3 rounded-lg text-sm font-semibold border transition-colors hover:bg-black/5"
-              style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink)" }}>
+              style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink)", display: "block", paddingTop: 14, paddingBottom: 14 }}>
               キャンセル
             </span>
           </Link>
           <button type="submit" disabled={loading}
-            className="flex-1 px-5 py-3 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="flex-1 px-5 py-3.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
             style={{ background: "var(--terra)", color: "white" }}>
             {loading ? "登録中…" : "登録する"}
           </button>

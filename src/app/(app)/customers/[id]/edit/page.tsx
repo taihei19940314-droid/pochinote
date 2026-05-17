@@ -58,21 +58,21 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
     router.push(`/customers/${id}?updated=1`);
   }
 
-  const inputClass = "w-full px-3 py-2.5 rounded-lg border text-sm outline-none focus:ring-1";
+  const inputClass = "w-full px-3 py-3 rounded-lg border text-base outline-none focus:ring-1";
   const inputStyle = { borderColor: "rgba(26,26,46,0.15)", background: "white" };
   const labelClass = "block text-xs font-medium mb-1.5";
   const labelStyle = { color: "var(--ink-soft)" };
 
   if (loading) return (
-    <div className="max-w-2xl mx-auto py-8 px-4 text-sm" style={{ color: "var(--ink-soft)" }}>読み込み中…</div>
+    <div className="max-w-2xl mx-auto py-6 px-3 text-sm" style={{ color: "var(--ink-soft)" }}>読み込み中…</div>
   );
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
+    <div className="max-w-2xl mx-auto py-6 lg:py-8 px-3 lg:px-4">
       <Link href={`/customers/${id}`} className="inline-flex items-center gap-1 text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
         ← 詳細に戻る
       </Link>
-      <h1 className="font-display text-3xl font-semibold tracking-tight mb-2">飼い主情報を編集</h1>
+      <h1 className="font-display text-2xl lg:text-3xl font-semibold tracking-tight mb-2">飼い主情報を編集</h1>
       <p className="text-xs mb-8" style={{ color: "var(--ink-soft)" }}>
         ペット情報は顧客詳細画面の各ペットカードの「✏️ 編集」ボタンから個別に編集できます
       </p>
@@ -106,13 +106,13 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
 
         <div className="flex gap-3">
           <Link href={`/customers/${id}`} className="flex-1">
-            <span className="block w-full text-center px-5 py-3 rounded-lg text-sm font-semibold border transition-colors hover:bg-black/5"
+            <span className="block w-full text-center px-5 py-3.5 rounded-lg text-sm font-semibold border transition-colors hover:bg-black/5"
               style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink)" }}>
               キャンセル
             </span>
           </Link>
           <button type="submit" disabled={saving}
-            className="flex-1 px-5 py-3 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="flex-1 px-5 py-3.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
             style={{ background: "var(--terra)", color: "white" }}>
             {saving ? "保存中…" : "保存する"}
           </button>

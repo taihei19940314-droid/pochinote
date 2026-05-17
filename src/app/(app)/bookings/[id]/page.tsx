@@ -44,7 +44,7 @@ export default async function BookingDetailPage({
   const petLabel = [pet?.name, pet?.breed ?? pet?.species].filter(Boolean).join(" / ");
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
+    <div className="max-w-2xl mx-auto py-6 lg:py-8 px-3 lg:px-4">
 
       {/* Back */}
       <Link
@@ -82,7 +82,7 @@ export default async function BookingDetailPage({
       </Link>
 
       {/* 基本情報 */}
-      <div className="card p-6 mb-5">
+      <div className="card p-4 lg:p-6 mb-5">
         <div className="flex items-start justify-between mb-4">
           <h2 className="font-display text-lg font-semibold">基本情報</h2>
           <div className="flex items-center gap-2">
@@ -95,7 +95,7 @@ export default async function BookingDetailPage({
             </Link>
           </div>
         </div>
-        <div className="space-y-3 text-sm">
+        <div className="space-y-3 text-base lg:text-sm">
           <div className="flex justify-between items-center">
             <span style={{ color: "var(--ink-soft)" }}>来店日時</span>
             <span className="font-mono font-medium">{formatBookingTime(booking.scheduled_at, booking.duration_min as number | null)}</span>
