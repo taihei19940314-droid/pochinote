@@ -43,13 +43,34 @@ export default async function BookingDetailPage({
   const statusBadge = getStatusBadge(booking.status as string);
   const petLabel = [pet?.name, pet?.breed ?? pet?.species].filter(Boolean).join(" / ");
 
+  const backHref = customer ? `/customers/${customer.id}` : "/customers";
+
   return (
+    <div>
+      {/* Sticky compact header */}
+      <div className="sticky top-0 z-30 flex items-center justify-between px-3 lg:px-4 border-b"
+        style={{ background: "var(--paper)", minHeight: 48, boxShadow: "0 1px 0 rgba(26,26,46,0.08)" }}>
+        <Link href={backHref} className="flex items-center gap-1.5 text-sm font-medium py-2 pr-4"
+          style={{ color: "var(--ink-soft)" }}>
+          ← {customer?.name ?? "顧客詳細"}
+        </Link>
+        <div className="flex items-center gap-2">
+          <CancelButton bookingId={id} status={booking.status as string} />
+          <Link href={`/bookings/${id}/edit`}>
+            <span className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
+              style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink-soft)" }}>
+              ✏️ 編集
+            </span>
+          </Link>
+        </div>
+      </div>
+
     <div className="max-w-2xl mx-auto py-6 lg:py-8 px-3 lg:px-4">
 
-      {/* Back */}
+      {/* Back — hidden on mobile, shown on desktop as breadcrumb */}
       <Link
-        href={customer ? `/customers/${customer.id}` : "/customers"}
-        className="inline-flex items-center gap-1 text-sm mb-4"
+        href={backHref}
+        className="hidden lg:inline-flex items-center gap-1 text-sm mb-4"
         style={{ color: "var(--ink-soft)" }}
       >
         ← 顧客カルテに戻る
@@ -85,7 +106,8 @@ export default async function BookingDetailPage({
       <div className="card p-4 lg:p-6 mb-5">
         <div className="flex items-start justify-between mb-4">
           <h2 className="font-display text-lg font-semibold">基本情報</h2>
-          <div className="flex items-center gap-2">
+          {/* 編集・キャンセルボタンは PC のみ表示(モバイルは sticky バーに表示) */}
+          <div className="hidden lg:flex items-center gap-2">
             <CancelButton bookingId={id} status={booking.status as string} />
             <Link href={`/bookings/${id}/edit`}>
               <span className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
@@ -136,6 +158,7 @@ export default async function BookingDetailPage({
 
       {/* 削除 */}
       <DeleteButton bookingId={id} customerId={customer?.id ?? ""} />
+    </div>
     </div>
   );
 }

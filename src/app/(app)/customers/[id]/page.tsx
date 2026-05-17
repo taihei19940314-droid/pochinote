@@ -86,8 +86,24 @@ export default async function CustomerDetailPage({
   const showStats = totalForRate >= 3;
 
   return (
+    <div>
+      {/* Sticky compact header */}
+      <div className="sticky top-0 z-30 flex items-center justify-between px-3 lg:px-4 border-b"
+        style={{ background: "var(--paper)", minHeight: 48, boxShadow: "0 1px 0 rgba(26,26,46,0.08)" }}>
+        <Link href="/customers" className="flex items-center gap-1.5 text-sm font-medium py-2 pr-4"
+          style={{ color: "var(--ink-soft)" }}>
+          ← {customer.name}
+        </Link>
+        <Link href={`/customers/${id}/edit`}>
+          <span className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
+            style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink-soft)" }}>
+            ✏️ 編集
+          </span>
+        </Link>
+      </div>
+
     <div className="max-w-3xl mx-auto py-6 lg:py-8 px-3 lg:px-4">
-      <Link href="/customers" className="inline-flex items-center gap-1 text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
+      <Link href="/customers" className="hidden lg:inline-flex items-center gap-1 text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
         ← 顧客カルテに戻る
       </Link>
 
@@ -106,7 +122,8 @@ export default async function CustomerDetailPage({
       <div className="card p-6 mb-5">
         <div className="flex items-start justify-between mb-4">
           <h2 className="font-display text-lg font-semibold">飼い主情報</h2>
-          <Link href={`/customers/${id}/edit`}>
+          {/* 編集ボタンは PC のみ表示(モバイルは sticky バーに表示) */}
+          <Link href={`/customers/${id}/edit`} className="hidden lg:block">
             <span className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5"
               style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink-soft)" }}>
               ✏️ 編集
@@ -339,6 +356,7 @@ export default async function CustomerDetailPage({
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }
