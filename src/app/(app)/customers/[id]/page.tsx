@@ -102,7 +102,7 @@ export default async function CustomerDetailPage({
         </Link>
       </div>
 
-    <div className="max-w-3xl mx-auto py-6 lg:py-8 px-3 lg:px-4">
+    <div className="max-w-3xl mx-auto pt-2 pb-6 lg:py-8 px-3 lg:px-4">
       <Link href="/customers" className="hidden lg:inline-flex items-center gap-1 text-sm mb-6" style={{ color: "var(--ink-soft)" }}>
         ← 顧客カルテに戻る
       </Link>
@@ -237,17 +237,17 @@ export default async function CustomerDetailPage({
 
       {/* Section 3: 次回予約 */}
       <div className="card overflow-hidden mb-5">
-        <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
-          <h2 className="font-display text-lg font-semibold">次回予約</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>{(upcomingBookings ?? []).length} 件</span>
-            <Link href={`/customers/${id}/bookings/new?mode=booking`}>
-              <span className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-opacity hover:opacity-90"
-                style={{ background: "var(--terra)", color: "white" }}>
-                + 予約作成
-              </span>
-            </Link>
+        <div className="px-6 py-4 border-b" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <h2 className="font-display text-lg font-semibold">次回予約</h2>
+            <span className="text-xs font-mono flex-shrink-0" style={{ color: "var(--ink-soft)" }}>{(upcomingBookings ?? []).length} 件</span>
           </div>
+          <Link href={`/customers/${id}/bookings/new?mode=booking`} className="block">
+            <span className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-opacity hover:opacity-90"
+              style={{ background: "var(--terra)", color: "white" }}>
+              + 予約を作成
+            </span>
+          </Link>
         </div>
         {(upcomingBookings ?? []).length === 0 ? (
           <div className="px-6 py-8 text-center text-sm" style={{ color: "var(--ink-soft)" }}>
@@ -294,19 +294,19 @@ export default async function CustomerDetailPage({
 
       {/* Section 4: 来店履歴 */}
       <div className="card overflow-hidden">
-        <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
-          <h2 className="font-display text-lg font-semibold">来店履歴</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>
-              {allBookings.length} 件{cancelCount > 0 && `(うちキャンセル ${cancelCount} 件)`}
+        <div className="px-6 py-4 border-b" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <h2 className="font-display text-lg font-semibold">来店履歴</h2>
+            <span className="text-xs font-mono flex-shrink-0" style={{ color: "var(--ink-soft)" }}>
+              {allBookings.length} 件{cancelCount > 0 && `(キャンセル ${cancelCount})`}
             </span>
-            <Link href={`/customers/${id}/bookings/new`}>
-              <span className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-opacity hover:opacity-90"
-                style={{ background: "var(--terra)", color: "white" }}>
-                + 来店記録
-              </span>
-            </Link>
           </div>
+          <Link href={`/customers/${id}/bookings/new`} className="block">
+            <span className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded-lg transition-opacity hover:opacity-90"
+              style={{ background: "var(--terra)", color: "white" }}>
+              + 来店記録を追加
+            </span>
+          </Link>
         </div>
         {allBookings.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm" style={{ color: "var(--ink-soft)" }}>

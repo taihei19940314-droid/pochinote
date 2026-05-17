@@ -65,7 +65,7 @@ export default async function BookingDetailPage({
         </div>
       </div>
 
-    <div className="max-w-2xl mx-auto py-6 lg:py-8 px-3 lg:px-4">
+    <div className="max-w-2xl mx-auto pt-2 pb-6 lg:py-8 px-3 lg:px-4">
 
       {/* Back — hidden on mobile, shown on desktop as breadcrumb */}
       <Link

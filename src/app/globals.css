@@ -376,8 +376,9 @@ a,
 button:active:not(:disabled),
 a:active,
 [role="button"]:active {
-  opacity: 0.75;
-  transition: opacity 0.1s;
+  transform: scale(0.97);
+  opacity: 0.9;
+  transition: transform 0.1s, opacity 0.1s;
 }
 
 /* date/datetime-local を他の input と高さ・パディングを統一 */
