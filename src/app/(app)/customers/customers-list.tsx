@@ -134,11 +134,12 @@ export default function CustomersList({
             const rabiesWarn = pet ? rabiesExpired(pet.rabies_vaccination_date) : false;
 
             return (
-              <Link key={c.id} href={`/customers/${c.id}`}>
-                <div
-                  className="card p-4 lg:p-5 flex items-center gap-4 cursor-pointer transition-all hover:shadow-md"
-                  style={{ borderLeft: `3px solid ${urgent ? "var(--terra)" : "transparent"}` }}
-                >
+              <Link
+                key={c.id}
+                href={`/customers/${c.id}`}
+                className="card p-4 lg:p-5 flex items-center gap-4 cursor-pointer transition-all hover:shadow-md"
+                style={{ borderLeft: `3px solid ${urgent ? "var(--terra)" : "transparent"}` }}
+              >
                   <div className="text-3xl w-12 h-12 flex items-center justify-center rounded-full flex-shrink-0"
                     style={{ background: "var(--paper-warm)" }}>
                     🐕
@@ -176,7 +177,6 @@ export default function CustomersList({
                       </div>
                     )}
                   </div>
-                </div>
               </Link>
             );
           })}
