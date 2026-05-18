@@ -141,14 +141,14 @@ export default async function CustomerDetailPage({
             <span className="font-medium">{customer.line_user_id ?? "未登録"}</span>
           </div>
           {showStats && (
-            <div className="flex justify-between pt-2 mt-2" style={{ borderTop: "1px solid rgba(26,26,46,0.06)" }}>
-              <span style={{ color: "var(--ink-soft)" }}>来店統計</span>
+            <div className="pt-2 mt-2" style={{ borderTop: "1px solid rgba(26,26,46,0.06)" }}>
+              <span className="block text-xs mb-0.5" style={{ color: "var(--ink-soft)" }}>来店統計</span>
               <span
-                className="font-medium text-right"
-                style={{ color: cancelRate >= 30 ? "#c0392b" : "var(--ink-soft)" }}
+                className="block font-medium text-sm"
+                style={{ color: cancelRate >= 30 ? "#c0392b" : "var(--ink)" }}
               >
                 来店 {visitCount} 回 / キャンセル {cancelCount} 回
-                <span className="ml-1 text-xs">(キャンセル率 {cancelRate}%)</span>
+                <span className="ml-1 text-xs" style={{ color: cancelRate >= 30 ? "#c0392b" : "var(--ink-soft)" }}>(キャンセル率 {cancelRate}%)</span>
               </span>
             </div>
           )}
