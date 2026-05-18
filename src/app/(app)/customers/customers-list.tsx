@@ -145,9 +145,9 @@ export default function CustomersList({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                      <span className="font-semibold text-base lg:text-sm">{pet?.name ?? "—"}</span>
+                      <span className="font-semibold text-base">{pet?.name ?? "—"}</span>
                       {pet?.breed && (
-                        <span className="text-sm lg:text-xs" style={{ color: "var(--ink-soft)" }}>/ {pet.breed}</span>
+                        <span className="text-sm" style={{ color: "var(--ink-soft)" }}>/ {pet.breed}</span>
                       )}
                       {c.pets.length > 1 && (
                         <span className="pill text-[10px]" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>
@@ -160,7 +160,7 @@ export default function CustomersList({
                         </span>
                       )}
                     </div>
-                    <div className="text-sm lg:text-xs" style={{ color: "var(--ink-soft)" }}>{c.name}</div>
+                    <div className="text-sm" style={{ color: "var(--ink-soft)" }}>{c.name}</div>
                     {pet?.notes && (
                       <div className="text-xs mt-0.5 pill" style={{ background: "rgba(200,155,60,0.15)", color: "var(--gold)" }}>
                         ⚠ {pet.notes.slice(0, 20)}{pet.notes.length > 20 ? "…" : ""}
@@ -169,9 +169,9 @@ export default function CustomersList({
                   </div>
                   <div className="text-right flex-shrink-0 space-y-1">
                     {days === null ? (
-                      <div className="text-sm lg:text-xs font-mono" style={{ color: "var(--terra)" }}>未来店</div>
+                      <div className="text-sm font-mono" style={{ color: "var(--terra)" }}>未来店</div>
                     ) : (
-                      <div className="text-sm lg:text-xs font-mono" style={{ color: urgent ? "var(--terra)" : "var(--ink-soft)" }}>
+                      <div className="text-sm font-mono" style={{ color: urgent ? "var(--terra)" : "var(--ink-soft)" }}>
                         {days}日前
                       </div>
                     )}

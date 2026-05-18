@@ -131,7 +131,7 @@ export default async function CustomerDetailPage({
           </Link>
         </div>
         <h1 className="font-display text-2xl lg:text-3xl font-light tracking-tight mb-4">{customer.name}</h1>
-        <div className="space-y-2 text-base lg:text-sm">
+        <div className="space-y-2 text-base">
           <div className="flex justify-between">
             <span style={{ color: "var(--ink-soft)" }}>電話番号</span>
             <span className="font-medium">{customer.phone ?? "未登録"}</span>

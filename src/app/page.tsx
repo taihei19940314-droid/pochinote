@@ -36,7 +36,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto px-4 lg:px-6">
           <div className="inline-flex items-center gap-2 mb-6 lg:mb-7 px-3 py-1.5 rounded-full text-xs font-medium" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--terra)" }} />
-            β版・先着 50 店舗 募集中
+            先行モニター・先着 50 店舗 募集中
           </div>
 
           {/* 問題1: 見出しフォントサイズをスマホで縮小 */}
@@ -54,7 +54,7 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-3 lg:gap-4 mb-10 lg:mb-14">
             <Link href="/dashboard">
               <span className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90" style={{ background: "var(--terra)", color: "white" }}>
-                β版を見てみる →
+                先行モニターを見てみる →
               </span>
             </Link>
             <Link href="/line-preview">
@@ -118,8 +118,8 @@ export default function HomePage() {
       {/* Beta CTA */}
       <section className="py-16 lg:py-24 border-t" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
         <div className="max-w-2xl mx-auto px-4 lg:px-6 text-center">
-          <div className="text-xs tracking-[0.2em] uppercase mb-4" style={{ color: "var(--ink-soft)" }}>Limited beta</div>
-          <h2 className="font-display text-3xl lg:text-4xl font-light tracking-tight mb-4">β50店舗、限定募集中</h2>
+          <div className="text-xs tracking-[0.2em] uppercase mb-4" style={{ color: "var(--ink-soft)" }}>Limited Monitor</div>
+          <h2 className="font-display text-3xl lg:text-4xl font-light tracking-tight mb-4">先行モニター50店舗、限定募集中</h2>
           <p className="text-base mb-2" style={{ color: "var(--ink-soft)" }}>
             月額 <span className="font-semibold" style={{ color: "var(--ink)" }}>¥3,800</span>（Pro）・初月無料・いつでも解約可能
           </p>

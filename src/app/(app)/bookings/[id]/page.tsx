@@ -117,7 +117,7 @@ export default async function BookingDetailPage({
             </Link>
           </div>
         </div>
-        <div className="space-y-3 text-base lg:text-sm">
+        <div className="space-y-3 text-base">
           <div className="flex justify-between items-center">
             <span style={{ color: "var(--ink-soft)" }}>来店日時</span>
             <span className="font-mono font-medium">{formatBookingTime(booking.scheduled_at, booking.duration_min as number | null)}</span>

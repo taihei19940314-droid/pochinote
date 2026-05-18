@@ -34,9 +34,9 @@ export default function SignupsDashboard({ signups }: Props) {
         {/* Header */}
         <div className="flex items-start justify-between mb-10">
           <div>
-            <div className="text-xs tracking-[0.2em] uppercase mb-2" style={{ color: "var(--ink-soft)" }}>Admin · β Signups</div>
-            <h1 className="font-display text-4xl font-light tracking-tight">β募集 状況</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--ink-soft)" }}>トリエルのβ50店舗、限定募集進捗</p>
+            <div className="text-xs tracking-[0.2em] uppercase mb-2" style={{ color: "var(--ink-soft)" }}>Admin · Monitor Signups</div>
+            <h1 className="font-display text-4xl font-light tracking-tight">先行モニター 募集状況</h1>
+            <p className="text-sm mt-1" style={{ color: "var(--ink-soft)" }}>トリエルの先行モニター50店舗、限定募集進捗</p>
           </div>
           <button
             onClick={logout}
@@ -75,7 +75,7 @@ export default function SignupsDashboard({ signups }: Props) {
         {/* Progress bar */}
         <div className="card p-6 mb-8">
           <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-semibold">β50店舗目標まで</div>
+            <div className="text-sm font-semibold">先行モニター50店舗目標まで</div>
             <div className="font-display text-2xl font-light">
               <span style={{ color: "var(--terra)" }}>{total}</span>
               <span className="text-base font-normal" style={{ color: "var(--ink-soft)" }}> / {BETA_GOAL}</span>
