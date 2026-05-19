@@ -36,6 +36,9 @@ export function BottomTab() {
           <Link
             key={href}
             href={href}
+            onClick={() => {
+              document.querySelector("#main-scroll")?.scrollTo({ top: 0, behavior: "instant" });
+            }}
             className="flex-1 flex flex-col items-center justify-center py-2 gap-1 transition-colors relative"
             style={{
               minHeight: 56,
