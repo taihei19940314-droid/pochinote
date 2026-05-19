@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
-const HARDCODED_NAME = "美咲";
+const SALON_NAME = "ぽちのてトリミング";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ function getJstNow(): Date {
 function getGreeting(hour: number): string {
   if (hour >= 5 && hour < 11) return "おはようございます";
   if (hour >= 11 && hour < 18) return "こんにちは";
-  return "こんばんは";
+  return "こんばんは"; // 18:00〜4:59
 }
 
 function getDateLabel(jst: Date): string {
@@ -117,10 +117,10 @@ export default async function DashboardPage() {
         <div className="lg:col-span-5 mb-5 lg:mb-0">
           <div className="text-xs tracking-[0.2em] uppercase mb-2" style={{ color: "var(--ink-soft)" }}>{dateLabel}</div>
           <h1 className="font-display text-[32px] lg:text-[40px] leading-[1.1] font-light tracking-tight">
-            {greeting}、<span className="italic" style={{ color: "var(--terra)" }}>{HARDCODED_NAME}</span>さん。<br />
+            {greeting}、<wbr /><span className="italic whitespace-nowrap" style={{ color: "var(--terra)" }}>{SALON_NAME}さん</span>。<br />
             {bookings.length > 0
-              ? <>今日は <span className="font-semibold">{bookings.length}</span> 件の予約。</>
-              : <>今日の予約はまだありません。</>
+              ? <span className="whitespace-nowrap">今日は <span className="font-semibold">{bookings.length}</span> 件の予約。</span>
+              : <span className="whitespace-nowrap">今日の予約はまだありません。</span>
             }
           </h1>
           {firstTime && lastTime && (
