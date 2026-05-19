@@ -1,289 +1,365 @@
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/server";
 
-function getGreeting(hour: number) {
-  if (hour >= 5 && hour < 11) return "おはよう";
+const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
+const HARDCODED_NAME = "美咲";
+
+export const dynamic = "force-dynamic";
+
+// ---- helpers ----
+
+function getJstNow(): Date {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+}
+
+function getGreeting(hour: number): string {
+  if (hour >= 5 && hour < 11) return "おはようございます";
   if (hour >= 11 && hour < 18) return "こんにちは";
   return "こんばんは";
 }
 
-function getJSTHour(): number {
-  const jst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
-  return jst.getHours();
-}
-
-function getJSTDateLabel(): string {
-  const jst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+function getDateLabel(jst: Date): string {
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return `${jst.getFullYear()} / ${String(jst.getMonth() + 1).padStart(2, "0")} / ${String(jst.getDate()).padStart(2, "0")} — ${days[jst.getDay()]}`;
+  const y = jst.getFullYear();
+  const m = String(jst.getMonth() + 1).padStart(2, "0");
+  const d = String(jst.getDate()).padStart(2, "0");
+  return `${y} / ${m} / ${d} — ${days[jst.getDay()]}`;
 }
 
-const barHeights = [40, 55, 35, 70, 50, 60, 85];
+function toHHMM(iso: string): string {
+  const d = new Date(iso);
+  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return `${String(jst.getUTCHours()).padStart(2, "0")}:${String(jst.getUTCMinutes()).padStart(2, "0")}`;
+}
 
-const offerCandidates = [
-  { id: "1", emoji: "🐕",   name: "田中さん × モカ",  breed: "トイプードル", days: 30, regular: "¥8,800",  offer: "¥7,800",  priority: "var(--terra)" },
-  { id: "2", emoji: "🐩",   name: "山田さん × こてつ", breed: "シーズー",    days: 35, regular: "¥5,500",  offer: "¥4,900",  priority: "var(--gold)" },
-  { id: "3", emoji: "🐕‍🦺", name: "佐藤さん × ラテ",  breed: "ゴルレト",    days: 42, regular: "¥12,800", offer: "¥10,800", priority: "var(--terra)" },
-  { id: "4", emoji: "🐕",   name: "鈴木さん × ベル",  breed: "ポメラニアン", days: 28, regular: "¥7,200",  offer: "¥6,500",  priority: "rgba(255,255,255,0.3)" },
-];
+function calcAge(birthDate: string | null): string | null {
+  if (!birthDate) return null;
+  const b = new Date(birthDate);
+  const now = new Date();
+  let y = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) y--;
+  return `${y}歳`;
+}
 
-export default function DashboardPage() {
-  const greeting = getGreeting(getJSTHour());
-  const dateLabel = getJSTDateLabel();
+const SERVICE_LABELS: Record<string, string> = {
+  full_course: "フルコース",
+  partial_cut: "部分カット",
+  nail: "爪切り",
+  shampoo: "シャンプーのみ",
+  ear_cleaning: "耳掃除",
+};
+
+const GENDER_MARK: Record<string, string> = { male: "♂", female: "♀" };
+
+// ---- page ----
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+
+  // JST today range in UTC
+  const jstNow = getJstNow();
+  const jstOffset = 9 * 60 * 60 * 1000;
+  const jstMidnightUtc = new Date(
+    Date.UTC(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate()) - jstOffset
+  );
+  const tomorrowMidnightUtc = new Date(jstMidnightUtc.getTime() + 24 * 60 * 60 * 1000);
+
+  const { data: rawBookings } = await supabase
+    .from("bookings")
+    .select(`
+      id, scheduled_at, status, services, price, duration_min, memo,
+      pet:pet_id(name, breed, gender, birth_date, notes),
+      customer:customer_id(id, name)
+    `)
+    .eq("salon_id", DEFAULT_SALON_ID)
+    .gte("scheduled_at", jstMidnightUtc.toISOString())
+    .lt("scheduled_at", tomorrowMidnightUtc.toISOString())
+    .order("scheduled_at", { ascending: true });
+
+  type BookingRow = {
+    id: string;
+    scheduled_at: string;
+    status: string;
+    services: string[] | null;
+    price: number | null;
+    duration_min: number | null;
+    memo: string | null;
+    pet: { name: string; breed: string | null; gender: string | null; birth_date: string | null; notes: string | null } | null;
+    customer: { id: string; name: string } | null;
+  };
+
+  const bookings: BookingRow[] = (rawBookings ?? []).map((b) => ({
+    ...b,
+    pet: Array.isArray(b.pet) ? b.pet[0] ?? null : (b.pet as BookingRow["pet"]),
+    customer: Array.isArray(b.customer) ? b.customer[0] ?? null : (b.customer as BookingRow["customer"]),
+    services: b.services as string[] | null,
+  }));
+
+  const completedCount = bookings.filter((b) => b.status === "completed").length;
+  const inProgressCount = bookings.filter((b) => b.status === "in_progress").length;
+  const confirmedCount = bookings.filter((b) => b.status === "confirmed").length;
+
+  const firstTime = bookings.length > 0 ? toHHMM(bookings[0].scheduled_at) : null;
+  const lastTime = bookings.length > 0 ? toHHMM(bookings[bookings.length - 1].scheduled_at) : null;
+
+  const hour = jstNow.getHours();
+  const greeting = getGreeting(hour);
+  const dateLabel = getDateLabel(jstNow);
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-2">
-      {/* Hero strip */}
-      <div className="grid grid-cols-12 gap-5 mb-8">
-        <div className="col-span-5">
+    <div className="max-w-5xl mx-auto py-4 lg:py-8 px-3 lg:px-4">
+
+      {/* ── Hero strip ── */}
+      <div className="lg:grid lg:grid-cols-12 lg:gap-5 mb-6 lg:mb-8">
+
+        {/* Greeting */}
+        <div className="lg:col-span-5 mb-5 lg:mb-0">
           <div className="text-xs tracking-[0.2em] uppercase mb-2" style={{ color: "var(--ink-soft)" }}>{dateLabel}</div>
-          <h1 className="font-display text-[40px] leading-[1.08] font-light tracking-tight">
-            {greeting}、<span className="italic" style={{ color: "var(--terra)" }}>美咲</span>さん。<br />
-            今日は <span className="font-semibold">7</span> 件の予約。
+          <h1 className="font-display text-[32px] lg:text-[40px] leading-[1.1] font-light tracking-tight">
+            {greeting}、<span className="italic" style={{ color: "var(--terra)" }}>{HARDCODED_NAME}</span>さん。<br />
+            {bookings.length > 0
+              ? <>今日は <span className="font-semibold">{bookings.length}</span> 件の予約。</>
+              : <>今日の予約はまだありません。</>
+            }
           </h1>
-          <p className="text-sm mt-3" style={{ color: "var(--ink-soft)" }}>
-            14:00〜15:30 に空きが出ています。<br />
-            条件にあう常連さん 4 名 に{" "}
-            <span className="font-semibold" style={{ color: "var(--terra)" }}>自動オファー</span>を準備しました。
-          </p>
+          {firstTime && lastTime && (
+            <p className="text-sm mt-3" style={{ color: "var(--ink-soft)" }}>
+              {firstTime}〜{lastTime} のスケジュール。
+            </p>
+          )}
         </div>
 
-        <div className="col-span-7 grid grid-cols-3 gap-4">
-          <div className="card p-5">
-            <div className="text-[11px] tracking-wider uppercase mb-3" style={{ color: "var(--ink-soft)" }}>本日の稼働率</div>
+        {/* KPI cards — Coming Soon */}
+        <div className="lg:col-span-7 grid grid-cols-3 gap-3 lg:gap-4">
+          {/* 稼働率 */}
+          <div className="card p-4 lg:p-5 relative overflow-hidden">
+            <div className="text-[10px] lg:text-[11px] tracking-wider uppercase mb-2 lg:mb-3" style={{ color: "var(--ink-soft)" }}>本日の稼働率</div>
             <div className="flex items-baseline gap-1">
-              <span className="font-display text-5xl font-light">78</span>
-              <span className="text-lg" style={{ color: "var(--ink-soft)" }}>%</span>
+              <span className="font-display text-3xl lg:text-5xl font-light opacity-20">—</span>
             </div>
             <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--paper-warm)" }}>
-              <div className="h-full rounded-full" style={{ width: "78%", background: "var(--terra)" }} />
+              <div className="h-full rounded-full w-0" style={{ background: "var(--terra)" }} />
             </div>
-            <div className="text-[11px] font-medium mt-2" style={{ color: "var(--sage)" }}>↑ 前週比 +12pt</div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-1 rounded-full" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>準備中</span>
+            </div>
           </div>
 
-          <div className="card p-5">
-            <div className="text-[11px] tracking-wider uppercase mb-3" style={{ color: "var(--ink-soft)" }}>本日売上(見込)</div>
+          {/* 売上 */}
+          <div className="card p-4 lg:p-5 relative overflow-hidden">
+            <div className="text-[10px] lg:text-[11px] tracking-wider uppercase mb-2 lg:mb-3" style={{ color: "var(--ink-soft)" }}>本日売上(見込)</div>
             <div className="flex items-baseline gap-1">
-              <span className="text-base" style={{ color: "var(--ink-soft)" }}>¥</span>
-              <span className="font-display text-4xl font-light">68,400</span>
+              <span className="font-display text-3xl lg:text-4xl font-light opacity-20">—</span>
             </div>
-            <div className="flex items-end gap-1 mt-3 h-8">
-              {barHeights.map((h, i) => (
-                <div key={i} className={i === barHeights.length - 1 ? "bar flex-1" : "bar-muted flex-1"} style={{ height: `${h}%` }} />
+            <div className="flex items-end gap-0.5 mt-3 h-8 opacity-10">
+              {[40,55,35,70,50,60,85].map((h, i) => (
+                <div key={i} className="bar-muted flex-1" style={{ height: `${h}%` }} />
               ))}
             </div>
-            <div className="text-[11px] mt-2" style={{ color: "var(--ink-soft)" }}>直近 7 日</div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-1 rounded-full" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>準備中</span>
+            </div>
           </div>
 
-          <div className="card p-5" style={{ background: "var(--ink)", color: "var(--paper)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-[11px] tracking-wider uppercase opacity-70">空き枠オファー</div>
-              <span className="w-2 h-2 rounded-full" style={{ background: "var(--terra)" }} />
+          {/* 空き枠オファー */}
+          <div className="card p-4 lg:p-5 relative overflow-hidden" style={{ background: "var(--ink)", color: "var(--paper)" }}>
+            <div className="flex items-center justify-between mb-2 lg:mb-3">
+              <div className="text-[10px] lg:text-[11px] tracking-wider uppercase opacity-70">空き枠オファー</div>
+              <span className="w-2 h-2 rounded-full opacity-40" style={{ background: "var(--terra)" }} />
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="font-display text-5xl font-light">4</span>
-              <span className="text-sm opacity-70">件 待機中</span>
+              <span className="font-display text-3xl lg:text-5xl font-light opacity-20">—</span>
             </div>
-            <div className="mt-3 text-[11px] font-semibold tracking-wider uppercase" style={{ color: "var(--terra)" }}>内容を確認 →</div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-1 rounded-full" style={{ background: "rgba(250,247,242,0.1)", color: "rgba(250,247,242,0.6)" }}>準備中</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-12 gap-5">
-        {/* Schedule */}
-        <div className="col-span-7 card p-6">
-          <div className="flex items-center justify-between mb-5">
+      {/* ── Main grid ── */}
+      <div className="lg:grid lg:grid-cols-12 lg:gap-5">
+
+        {/* ── 予約タイムライン ── */}
+        <div className="lg:col-span-7 card p-4 lg:p-6 mb-5 lg:mb-0">
+          <div className="flex items-start justify-between mb-4 lg:mb-5">
             <div>
-              <h2 className="font-display text-2xl font-semibold tracking-tight">本日の予約</h2>
-              <div className="text-xs mt-1 font-mono" style={{ color: "var(--ink-soft)" }}>7 件 / 9:00 — 18:30</div>
+              <h2 className="font-display text-xl lg:text-2xl font-semibold tracking-tight">本日の予約</h2>
+              {bookings.length > 0 && firstTime && lastTime && (
+                <div className="text-xs mt-1 font-mono" style={{ color: "var(--ink-soft)" }}>
+                  {bookings.length} 件 / {firstTime} — {lastTime}
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="pill" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>完了 2</span>
-              <span className="pill" style={{ background: "rgba(217,119,87,0.15)", color: "var(--terra-deep)" }}>施術中 1</span>
-              <span className="pill" style={{ background: "rgba(26,26,46,0.08)", color: "var(--ink-soft)" }}>予定 4</span>
-            </div>
+            {bookings.length > 0 && (
+              <div className="flex items-center gap-1.5 text-xs flex-wrap justify-end">
+                {completedCount > 0 && (
+                  <span className="pill" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>完了 {completedCount}</span>
+                )}
+                {inProgressCount > 0 && (
+                  <span className="pill" style={{ background: "rgba(217,119,87,0.15)", color: "var(--terra)" }}>施術中 {inProgressCount}</span>
+                )}
+                {confirmedCount > 0 && (
+                  <span className="pill" style={{ background: "rgba(26,26,46,0.08)", color: "var(--ink-soft)" }}>予定 {confirmedCount}</span>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="space-y-0">
-            {/* 完了: モカ id=1 */}
-            <Link href="/customers/1">
-              <div className="flex items-center gap-4 py-3 border-b opacity-60 rounded-lg transition-colors hover:bg-[rgba(217,119,87,0.04)]" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
-                <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>09:00</div>
-                <div className="dot" style={{ background: "var(--sage)" }} />
-                <div className="dog-avatar">🐕</div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">モカ <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ トイプードル ♀ 4y</span></div>
-                  <div className="text-xs" style={{ color: "var(--ink-soft)" }}>フルコース + 部分カット · 田中様</div>
-                </div>
-                <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥8,800</div>
-              </div>
-            </Link>
-
-            {/* 完了: こてつ id=2 */}
-            <Link href="/customers/2">
-              <div className="flex items-center gap-4 py-3 border-b opacity-60 rounded-lg transition-colors hover:bg-[rgba(217,119,87,0.04)]" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
-                <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>10:30</div>
-                <div className="dot" style={{ background: "var(--sage)" }} />
-                <div className="dog-avatar">🐩</div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">こてつ <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ シーズー ♂ 7y</span></div>
-                  <div className="text-xs" style={{ color: "var(--ink-soft)" }}>シャンプーのみ · 山田様</div>
-                </div>
-                <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥5,500</div>
-              </div>
-            </Link>
-
-            {/* 施術中: ラテ id=3 */}
-            <Link href="/customers/3">
-              <div className="flex items-center gap-4 py-3 border-b -mx-3 px-3 rounded-lg transition-colors hover:brightness-95" style={{ borderColor: "rgba(26,26,46,0.05)", background: "linear-gradient(90deg, rgba(217,119,87,0.06), transparent)" }}>
-                <div className="font-mono text-xs font-semibold w-14" style={{ color: "var(--terra-deep)" }}>12:00</div>
-                <div className="dot" style={{ background: "var(--terra)" }} />
-                <div className="dog-avatar">🐕‍🦺</div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">ラテ <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ ゴールデンレトリバー ♀ 3y</span></div>
-                  <div className="text-xs flex items-center gap-2" style={{ color: "var(--ink-soft)" }}>
-                    フルコース + 爪切り · 佐藤様
-                    <span className="pill" style={{ background: "var(--terra)", color: "white" }}>施術中 残32分</span>
-                  </div>
-                </div>
-                <div className="text-xs font-mono font-semibold" style={{ color: "var(--terra-deep)" }}>¥12,800</div>
-              </div>
-            </Link>
-
-            {/* 空き枠: クリック不可 */}
-            <div className="flex items-center gap-4 py-3 border-b stripe-bg -mx-3 px-3 rounded-lg" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
-              <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>14:00</div>
-              <div className="dot" style={{ background: "var(--gold)" }} />
-              <div className="dog-avatar opacity-40" style={{ background: "white", border: "1px dashed rgba(26,26,46,0.3)" }}>?</div>
-              <div className="flex-1">
-                <div className="font-medium text-sm" style={{ color: "var(--terra-deep)" }}>空き枠 — 90分</div>
-                <div className="text-xs" style={{ color: "var(--ink-soft)" }}>
-                  トリエルが <span className="font-semibold" style={{ color: "var(--ink)" }}>4 名</span> に LINE オファー送信を提案中
-                </div>
-              </div>
-              <button className="text-[11px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full" style={{ background: "var(--ink)", color: "var(--paper)" }}>
-                送信する
-              </button>
+          {bookings.length === 0 ? (
+            <div className="py-12 text-center text-sm" style={{ color: "var(--ink-soft)" }}>
+              本日の予約はありません
             </div>
+          ) : (
+            <div className="space-y-0">
+              {bookings.map((b, i) => {
+                const pet = b.pet;
+                const customer = b.customer;
+                const isCompleted = b.status === "completed";
+                const isInProgress = b.status === "in_progress";
+                const services = (b.services ?? []).map((s) => SERVICE_LABELS[s] ?? s).join(" + ");
+                const age = pet?.birth_date ? calcAge(pet.birth_date) : null;
+                const gender = pet?.gender ? (GENDER_MARK[pet.gender] ?? "") : "";
+                const petLabel = [pet?.breed, gender, age].filter(Boolean).join(" ");
+                const isLast = i === bookings.length - 1;
 
-            {/* 予定: ベル id=4 */}
-            <Link href="/customers/4">
-              <div className="flex items-center gap-4 py-3 border-b rounded-lg transition-colors hover:bg-[rgba(217,119,87,0.04)]" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
-                <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>15:30</div>
-                <div className="dot" style={{ background: "rgba(26,26,46,0.3)" }} />
-                <div className="dog-avatar">🐕</div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">ベル <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ ポメラニアン ♀ 2y</span></div>
-                  <div className="text-xs flex items-center gap-2" style={{ color: "var(--ink-soft)" }}>
-                    フルコース · 鈴木様
-                    <span className="pill" style={{ background: "rgba(200,155,60,0.18)", color: "var(--gold)" }}>⚠ 爪切り注意</span>
-                  </div>
-                </div>
-                <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥7,200</div>
-              </div>
-            </Link>
+                return (
+                  <Link key={b.id} href={`/bookings/${b.id}`}>
+                    <div
+                      className={[
+                        "flex items-center gap-3 py-3 rounded-lg transition-colors",
+                        !isLast ? "border-b" : "",
+                        isCompleted ? "opacity-60" : "",
+                        isInProgress ? "-mx-3 px-3" : "",
+                      ].join(" ")}
+                      style={{
+                        borderColor: "rgba(26,26,46,0.05)",
+                        background: isInProgress
+                          ? "linear-gradient(90deg, rgba(217,119,87,0.07), transparent)"
+                          : undefined,
+                      }}
+                    >
+                      {/* 時刻 */}
+                      <div
+                        className="font-mono text-xs w-12 flex-shrink-0"
+                        style={{ color: isInProgress ? "var(--terra)" : "var(--ink-soft)", fontWeight: isInProgress ? 600 : 400 }}
+                      >
+                        {toHHMM(b.scheduled_at)}
+                      </div>
 
-            {/* 予定: 空(そら) id=5 */}
-            <Link href="/customers/5">
-              <div className="flex items-center gap-4 py-3 border-b rounded-lg transition-colors hover:bg-[rgba(217,119,87,0.04)]" style={{ borderColor: "rgba(26,26,46,0.05)" }}>
-                <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>17:00</div>
-                <div className="dot" style={{ background: "rgba(26,26,46,0.3)" }} />
-                <div className="dog-avatar">🐶</div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">空(そら) <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ ミニチュアシュナウザー ♂ 5y</span></div>
-                  <div className="text-xs" style={{ color: "var(--ink-soft)" }}>フルコース + ハーブパック · 高橋様</div>
-                </div>
-                <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥9,500</div>
-              </div>
-            </Link>
+                      {/* ドット */}
+                      <div className="dot flex-shrink-0" style={{
+                        background: isCompleted ? "var(--sage)"
+                          : isInProgress ? "var(--terra)"
+                          : "rgba(26,26,46,0.25)"
+                      }} />
 
-            {/* 予定: 小麦 id=7 */}
-            <Link href="/customers/7">
-              <div className="flex items-center gap-4 py-3 rounded-lg transition-colors hover:bg-[rgba(217,119,87,0.04)]">
-                <div className="font-mono text-xs w-14" style={{ color: "var(--ink-soft)" }}>18:30</div>
-                <div className="dot" style={{ background: "rgba(26,26,46,0.3)" }} />
-                <div className="dog-avatar">🦮</div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">小麦 <span className="text-xs font-normal" style={{ color: "var(--ink-soft)" }}>/ 柴犬 ♀ 8y</span></div>
-                  <div className="text-xs" style={{ color: "var(--ink-soft)" }}>シャンプー + 顔バリ · 渡辺様</div>
-                </div>
-                <div className="text-xs font-mono" style={{ color: "var(--ink-soft)" }}>¥6,800</div>
-              </div>
-            </Link>
-          </div>
+                      {/* アイコン */}
+                      <div className="dog-avatar flex-shrink-0">🐕</div>
+
+                      {/* 情報 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm leading-snug">
+                          {pet?.name ?? "—"}
+                          {petLabel && (
+                            <span className="text-xs font-normal ml-1" style={{ color: "var(--ink-soft)" }}>
+                              / {petLabel}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs mt-0.5 flex items-center gap-2 flex-wrap" style={{ color: "var(--ink-soft)" }}>
+                          {services && <span>{services}</span>}
+                          {customer?.name && <span>· {customer.name}様</span>}
+                          {isInProgress && (
+                            <span className="pill" style={{ background: "var(--terra)", color: "white" }}>施術中</span>
+                          )}
+                          {pet?.notes && (
+                            <span className="pill" style={{ background: "rgba(200,155,60,0.18)", color: "var(--gold)" }}>
+                              ⚠ {pet.notes.slice(0, 12)}{pet.notes.length > 12 ? "…" : ""}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 金額 */}
+                      {b.price != null && (
+                        <div
+                          className="text-xs font-mono flex-shrink-0"
+                          style={{ color: isInProgress ? "var(--terra)" : "var(--ink-soft)", fontWeight: isInProgress ? 600 : 400 }}
+                        >
+                          ¥{b.price.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Right col */}
-        <div className="col-span-5 flex flex-col gap-4">
+        {/* ── Right column ── */}
+        <div className="lg:col-span-5 flex flex-col gap-4">
 
-          {/* Auto-offer panel */}
-          <div className="card p-6" style={{ background: "var(--ink)", color: "var(--paper)" }}>
+          {/* AUTO OFFER ENGINE — 準備中 */}
+          <div className="card p-5 lg:p-6 relative overflow-hidden" style={{ background: "var(--ink)", color: "var(--paper)" }}>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <div className="text-[11px] tracking-[0.2em] uppercase mb-1" style={{ opacity: 0.6 }}>Auto Offer Engine</div>
-                <h2 className="font-display text-xl font-semibold tracking-tight">
+                <div className="text-[10px] tracking-[0.2em] uppercase mb-1" style={{ opacity: 0.5 }}>Auto Offer Engine</div>
+                <h2 className="font-display text-lg lg:text-xl font-semibold tracking-tight">
                   空き枠の<br /><span style={{ color: "var(--terra)" }}>自動セールス</span>
                 </h2>
               </div>
-              <span className="pill" style={{ background: "rgba(217,119,87,0.2)", color: "var(--terra)" }}>14:00〜15:30 90分</span>
-            </div>
-            <div className="text-xs mb-4 leading-relaxed" style={{ opacity: 0.7 }}>
-              トリエルが選んだ常連 <span className="font-semibold" style={{ opacity: 1 }}>4 名</span>。LINEで限定オファーを配信できます。
+              <span className="pill text-[10px]" style={{ background: "rgba(217,119,87,0.2)", color: "var(--terra)" }}>Coming Soon</span>
             </div>
 
-            <div className="space-y-2">
-              {offerCandidates.map((c) => (
-                <Link key={c.id} href={`/customers/${c.id}`}>
-                  <div className="flex items-center gap-3 p-3 rounded-lg transition-opacity hover:opacity-80" style={{ background: "rgba(250,247,242,0.06)" }}>
-                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: c.priority }} />
-                    <div className="dog-avatar" style={{ background: "rgba(217,119,87,0.2)" }}>{c.emoji}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">{c.name} <span className="text-xs font-normal" style={{ opacity: 0.5 }}>/ {c.breed}</span></div>
-                      <div className="text-[11px] font-mono" style={{ opacity: 0.55 }}>前回 {c.days}日前 · 通常 {c.regular}</div>
-                    </div>
-                    <div className="text-sm font-semibold" style={{ color: "var(--terra)" }}>{c.offer}</div>
+            <div className="text-xs mb-5 leading-relaxed" style={{ opacity: 0.55 }}>
+              空き枠が出ると、条件にあう常連さんへ LINE で自動オファーを配信します。
+              施術中でも、トリエルが代わりにセールスします。
+            </div>
+
+            {/* プレースホルダーリスト */}
+            <div className="space-y-2 mb-5">
+              {[1,2,3].map((i) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: "rgba(250,247,242,0.05)" }}>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "rgba(217,119,87,0.3)" }} />
+                  <div className="dog-avatar flex-shrink-0" style={{ background: "rgba(217,119,87,0.1)", opacity: 0.4 }}>🐕</div>
+                  <div className="flex-1">
+                    <div className="h-2.5 rounded-full w-24 mb-1.5" style={{ background: "rgba(250,247,242,0.1)" }} />
+                    <div className="h-2 rounded-full w-16" style={{ background: "rgba(250,247,242,0.06)" }} />
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
 
-            <button className="mt-5 w-full py-3 rounded-lg text-xs font-semibold tracking-wider uppercase" style={{ background: "var(--terra)", color: "white" }}>
-              LINE で一括送信
-            </button>
+            <div className="py-3 rounded-lg text-center text-xs font-semibold tracking-wider uppercase" style={{ background: "rgba(250,247,242,0.06)", color: "rgba(250,247,242,0.35)" }}>
+              LINE 連携準備中
+            </div>
           </div>
 
-          {/* Alerts panel */}
-          <div className="card p-6">
+          {/* 気になるサイン — 準備中 */}
+          <div className="card p-5 lg:p-6 relative overflow-hidden">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-xl font-semibold tracking-tight">気になるサイン</h2>
-              <span className="text-[11px] font-mono" style={{ color: "var(--ink-soft)" }}>3 件</span>
+              <h2 className="font-display text-lg lg:text-xl font-semibold tracking-tight">気になるサイン</h2>
+              <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-1 rounded-full" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>準備中</span>
             </div>
-            <div className="space-y-3">
-              <div className="flex gap-3 p-3 rounded-lg" style={{ background: "rgba(217,119,87,0.08)" }}>
-                <div className="text-xl">⚠️</div>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">ベル(15:30予定) — 爪切り注意</div>
-                  <div className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>前回爪切り途中で中断。今日も慎重に対応してください。</div>
+
+            <div className="space-y-2">
+              {["ワクチン期限切れのお知らせ", "60日以上来店なし・再来促進", "誕生日メッセージ自動送信"].map((label) => (
+                <div key={label} className="flex gap-3 p-3 rounded-lg opacity-40" style={{ background: "rgba(26,26,46,0.04)" }}>
+                  <div className="w-5 h-5 rounded-full flex-shrink-0" style={{ background: "rgba(26,26,46,0.08)" }} />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium" style={{ color: "var(--ink-soft)" }}>{label}</div>
+                    <div className="h-2 rounded-full w-32 mt-1.5" style={{ background: "rgba(26,26,46,0.07)" }} />
+                  </div>
                 </div>
-                <button className="text-[11px] font-semibold uppercase tracking-wider self-center" style={{ color: "var(--terra)" }}>確認</button>
-              </div>
-              <div className="flex gap-3 p-3 rounded-lg" style={{ background: "rgba(200,155,60,0.08)" }}>
-                <div className="text-xl">📅</div>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">こなつ(プードル) — 60日経過</div>
-                  <div className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>最終来店から60日。再来促進メッセージを送ることを推奨します。</div>
-                </div>
-                <button className="text-[11px] font-semibold uppercase tracking-wider self-center" style={{ color: "var(--terra)" }}>対応</button>
-              </div>
-              <div className="flex gap-3 p-3 rounded-lg" style={{ background: "rgba(107,142,127,0.08)" }}>
-                <div className="text-xl">🎂</div>
-                <div className="flex-1">
-                  <div className="text-sm font-semibold">さくら(ヨークシャー) — 来週誕生日</div>
-                  <div className="text-xs mt-0.5" style={{ color: "var(--ink-soft)" }}>お祝いメッセージを自動送信する予定です。</div>
-                </div>
-                <button className="text-[11px] font-semibold uppercase tracking-wider self-center" style={{ color: "var(--terra)" }}>確認</button>
-              </div>
+              ))}
             </div>
+
+            <p className="text-xs mt-4 text-center" style={{ color: "var(--ink-soft)" }}>
+              顧客データと連携して、見落としゼロへ。
+            </p>
           </div>
 
         </div>
