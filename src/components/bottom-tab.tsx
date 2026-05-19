@@ -36,12 +36,18 @@ export function BottomTab() {
           <Link
             key={href}
             href={href}
-            className="flex-1 flex flex-col items-center justify-center py-2 gap-1 transition-colors"
+            className="flex-1 flex flex-col items-center justify-center py-2 gap-1 transition-colors relative"
             style={{
               minHeight: 56,
               color: active ? "var(--terra)" : "var(--ink-soft)",
             }}
           >
+            {active && (
+              <span
+                className="absolute top-0 left-1/2 -translate-x-1/2 rounded-b"
+                style={{ width: "40%", height: 4, background: "var(--terra)" }}
+              />
+            )}
             <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
             <span className="text-[10px] font-medium tracking-wide">{label}</span>
           </Link>

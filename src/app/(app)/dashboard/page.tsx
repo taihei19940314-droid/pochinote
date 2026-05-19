@@ -114,10 +114,11 @@ export default async function DashboardPage() {
       <div className="lg:grid lg:grid-cols-12 lg:gap-5 mb-6 lg:mb-8">
 
         {/* Greeting */}
-        <div className="lg:col-span-5 mb-5 lg:mb-0">
+        <div className="lg:col-span-7 mb-5 lg:mb-0">
           <div className="text-xs tracking-[0.2em] uppercase mb-2" style={{ color: "var(--ink-soft)" }}>{dateLabel}</div>
           <h1 className="font-display text-[32px] lg:text-[40px] leading-[1.1] font-light tracking-tight">
-            {greeting}、<wbr /><span className="italic whitespace-nowrap" style={{ color: "var(--terra)" }}>{SALON_NAME}さん</span>。<br />
+            {greeting}、<br />
+            <span className="italic whitespace-nowrap" style={{ color: "var(--terra)" }}>{SALON_NAME}さん</span>。<br />
             {bookings.length > 0
               ? <span className="whitespace-nowrap">今日は <span className="font-semibold">{bookings.length}</span> 件の予約。</span>
               : <span className="whitespace-nowrap">今日の予約はまだありません。</span>
@@ -131,7 +132,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* KPI cards — Coming Soon */}
-        <div className="lg:col-span-7 grid grid-cols-3 gap-3 lg:gap-4">
+        <div className="lg:col-span-5 grid grid-cols-3 gap-3 lg:gap-4">
           {/* 稼働率 */}
           <div className="card p-4 lg:p-5 relative overflow-hidden">
             <div className="text-[10px] lg:text-[11px] tracking-wider uppercase mb-2 lg:mb-3" style={{ color: "var(--ink-soft)" }}>本日の稼働率</div>
