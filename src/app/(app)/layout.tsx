@@ -4,7 +4,7 @@ import { ScrollToTop } from "@/components/scroll-to-top";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-dvh">
       <Sidebar />
       <main
         id="main-scroll"
