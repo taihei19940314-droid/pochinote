@@ -49,7 +49,7 @@ export default async function LinePage() {
       icon: MessageSquare,
       label: "メッセージテンプレート",
       sub: "3パターンの文面を編集",
-      badge: "準備中",
+      badge: null,
       countBadge: null,
     },
     {
