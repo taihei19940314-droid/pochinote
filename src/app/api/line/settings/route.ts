@@ -1,0 +1,98 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+
+const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
+
+function maskSecret(value: string | null | undefined): string {
+  if (!value) return "";
+  if (value.length <= 4) return "****";
+  return "****" + value.slice(-4);
+}
+
+function isMasked(value: string): boolean {
+  return value.startsWith("****");
+}
+
+export async function GET(): Promise<NextResponse> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("salons")
+    .select(
+      "line_channel_id, line_channel_secret, line_access_token, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled"
+    )
+    .eq("id", DEFAULT_SALON_ID)
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: "salon not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    line_channel_id: data.line_channel_id ?? "",
+    line_channel_secret: maskSecret(data.line_channel_secret),
+    line_access_token: maskSecret(data.line_access_token),
+    inactive_threshold_days: data.inactive_threshold_days,
+    min_resend_interval_days: data.min_resend_interval_days,
+    auto_offer_enabled: data.auto_offer_enabled,
+  });
+}
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const body = await req.json() as {
+    line_channel_id?: string;
+    line_channel_secret?: string;
+    line_access_token?: string;
+    inactive_threshold_days?: number;
+    min_resend_interval_days?: number;
+    auto_offer_enabled?: boolean;
+  };
+
+  const updates: Record<string, unknown> = {};
+
+  if (body.line_channel_id !== undefined) {
+    updates.line_channel_id = body.line_channel_id || null;
+  }
+  // 伏字値(****で始まる)はスキップして既存値を保持
+  if (body.line_channel_secret !== undefined && !isMasked(body.line_channel_secret)) {
+    updates.line_channel_secret = body.line_channel_secret || null;
+  }
+  if (body.line_access_token !== undefined && !isMasked(body.line_access_token)) {
+    updates.line_access_token = body.line_access_token || null;
+  }
+  if (body.inactive_threshold_days !== undefined) {
+    updates.inactive_threshold_days = body.inactive_threshold_days;
+  }
+  if (body.min_resend_interval_days !== undefined) {
+    updates.min_resend_interval_days = body.min_resend_interval_days;
+  }
+  if (body.auto_offer_enabled !== undefined) {
+    updates.auto_offer_enabled = body.auto_offer_enabled;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "no fields to update" }, { status: 400 });
+  }
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("salons")
+    .update(updates)
+    .eq("id", DEFAULT_SALON_ID)
+    .select(
+      "line_channel_id, line_channel_secret, line_access_token, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled"
+    )
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: "update failed" }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    line_channel_id: data.line_channel_id ?? "",
+    line_channel_secret: maskSecret(data.line_channel_secret),
+    line_access_token: maskSecret(data.line_access_token),
+    inactive_threshold_days: data.inactive_threshold_days,
+    min_resend_interval_days: data.min_resend_interval_days,
+    auto_offer_enabled: data.auto_offer_enabled,
+  });
+}
