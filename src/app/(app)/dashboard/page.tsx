@@ -337,6 +337,14 @@ export default async function DashboardPage() {
             <div className="py-3 rounded-lg text-center text-xs font-semibold tracking-wider uppercase" style={{ background: "rgba(250,247,242,0.06)", color: "rgba(250,247,242,0.35)" }}>
               LINE 連携準備中
             </div>
+
+            <a
+              href="/line"
+              className="mt-3 flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-semibold tracking-wide transition-opacity hover:opacity-90 active:scale-[0.98]"
+              style={{ background: "var(--terra)", color: "white" }}
+            >
+              LINE オファー管理を開く
+            </a>
           </div>
 
           {/* 気になるサイン — 準備中 */}

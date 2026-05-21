@@ -7,7 +7,7 @@ import { LayoutDashboard, FileText, MessageCircle } from "lucide-react";
 const tabs = [
   { label: "ホーム",  href: "/dashboard",     icon: LayoutDashboard },
   { label: "顧客",    href: "/customers",      icon: FileText },
-  { label: "LINE",    href: "/line-preview",   icon: MessageCircle },
+  { label: "LINE",    href: "/line",            icon: MessageCircle },
 ];
 
 export function BottomTab() {
@@ -18,6 +18,7 @@ export function BottomTab() {
     if (href === "/customers")
       // bookings pages are reached from customers, so keep customers tab highlighted
       return pathname.startsWith("/customers") || pathname.startsWith("/bookings");
+    if (href === "/line") return pathname.startsWith("/line");
     return pathname === href;
   }
 

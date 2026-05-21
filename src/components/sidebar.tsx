@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { label: "ダッシュボード", href: "/dashboard" },
   { label: "顧客カルテ", href: "/customers" },
-  { label: "飼い主LINE", href: "/line-preview" },
+  { label: "LINE 自動オファー", href: "/line" },
 ];
 
 export function Sidebar() {
