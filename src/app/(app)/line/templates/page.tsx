@@ -11,10 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function LineTemplatesPage() {
   const supabase = createAdminClient();
 
-  const [
-    { data: templates, error: templatesError },
-    { data: salon, error: salonError },
-  ] = await Promise.all([
+  const [{ data: templates }, { data: salon }] = await Promise.all([
     supabase
       .from("message_templates")
       .select("id, template_type, content, updated_at")
@@ -26,12 +23,6 @@ export default async function LineTemplatesPage() {
       .eq("id", DEFAULT_SALON_ID)
       .single(),
   ]);
-
-  console.error("[templates page] templatesError:", templatesError);
-  console.error("[templates page] salonError:", salonError);
-  console.log("[templates page] templates count:", templates?.length);
-  console.log("[templates page] templates raw:", JSON.stringify(templates));
-  console.log("[templates page] salon raw:", JSON.stringify(salon));
 
   const sorted = [...(templates ?? [])].sort(
     (a, b) =>
