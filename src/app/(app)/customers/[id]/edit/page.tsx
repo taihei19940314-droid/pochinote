@@ -14,20 +14,20 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [owner, setOwner] = useState({ name: "", phone: "", line_user_id: "" });
+  const [owner, setOwner] = useState({ name: "", phone: "" });
 
   useEffect(() => {
     params.then(({ id: resolvedId }) => {
       setId(resolvedId);
       createClient()
         .from("customers")
-        .select("name, phone, line_user_id")
+        .select("name, phone")
         .eq("id", resolvedId)
         .eq("salon_id", DEFAULT_SALON_ID)
         .single()
         .then(({ data: c }) => {
           if (!c) { router.replace("/customers"); return; }
-          setOwner({ name: c.name ?? "", phone: c.phone ?? "", line_user_id: c.line_user_id ?? "" });
+          setOwner({ name: c.name ?? "", phone: c.phone ?? "" });
           setLoading(false);
         });
     });
@@ -47,7 +47,6 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
     const { error: cErr } = await createClient().from("customers").update({
       name: owner.name.trim(),
       phone: owner.phone.trim() || null,
-      line_user_id: owner.line_user_id.trim() || null,
     }).eq("id", id);
 
     if (cErr) {
@@ -89,11 +88,6 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
               <label className={labelClass} style={labelStyle}>電話番号</label>
               <input type="tel" value={owner.phone} onChange={(e) => setO("phone", e.target.value)}
                 placeholder="090-0000-0000" className={inputClass} style={inputStyle} />
-            </div>
-            <div>
-              <label className={labelClass} style={labelStyle}>LINE ID</label>
-              <input type="text" value={owner.line_user_id} onChange={(e) => setO("line_user_id", e.target.value)}
-                placeholder="@hanako" className={inputClass} style={inputStyle} />
             </div>
           </div>
         </div>

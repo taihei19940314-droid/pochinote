@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { formatBookingTime } from "@/lib/format-booking-time";
 import { getStatusBadge } from "@/lib/booking-status";
+import { formatLineStatus, toneColor, type LineFollowStatus } from "@/lib/customer/line-status";
 
 // TODO: 認証実装後、ログイン中のサロンIDに置き換える
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
@@ -49,7 +50,7 @@ export default async function CustomerDetailPage({
 
   const { data: customer } = await supabase
     .from("customers")
-    .select("id, name, phone, line_user_id, notes")
+    .select("id, name, phone, line_user_id, line_follow_status, line_followed_at, notes")
     .eq("id", id)
     .eq("salon_id", DEFAULT_SALON_ID)
     .single();
@@ -137,8 +138,10 @@ export default async function CustomerDetailPage({
             <span className="font-medium">{customer.phone ?? "未登録"}</span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: "var(--ink-soft)" }}>LINE ID</span>
-            <span className="font-medium">{customer.line_user_id ?? "未登録"}</span>
+            <span style={{ color: "var(--ink-soft)" }}>LINE 連携</span>
+            <span className="font-medium" style={{ color: toneColor(formatLineStatus(customer.line_user_id, customer.line_follow_status as LineFollowStatus, customer.line_followed_at).tone) }}>
+              {formatLineStatus(customer.line_user_id, customer.line_follow_status as LineFollowStatus, customer.line_followed_at).label}
+            </span>
           </div>
           {showStats && (
             <div className="pt-2 mt-2" style={{ borderTop: "1px solid rgba(26,26,46,0.06)" }}>
