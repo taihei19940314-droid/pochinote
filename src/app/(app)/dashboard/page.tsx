@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 const SALON_NAME = "ぽちのてトリミング";
@@ -99,6 +100,17 @@ export default async function DashboardPage() {
   const completedCount = bookings.filter((b) => b.status === "completed").length;
   const inProgressCount = bookings.filter((b) => b.status === "in_progress").length;
   const confirmedCount = bookings.filter((b) => b.status === "confirmed").length;
+
+  // LINE 連携待ち件数
+  const adminSupabase = createAdminClient();
+  const { count: pendingMatchCount } = await adminSupabase
+    .from("customers")
+    .select("id", { count: "exact", head: true })
+    .eq("salon_id", DEFAULT_SALON_ID)
+    .not("line_user_id", "is", null)
+    .eq("line_follow_status", "followed")
+    .like("name", "(未特定%")
+    .eq("ignored", false);
 
   const firstTime = bookings.length > 0 ? toHHMM(bookings[0].scheduled_at) : null;
   const lastTime = bookings.length > 0 ? toHHMM(bookings[bookings.length - 1].scheduled_at) : null;
@@ -302,6 +314,25 @@ export default async function DashboardPage() {
 
         {/* ── Right column ── */}
         <div className="lg:col-span-5 flex flex-col gap-4">
+
+          {/* LINE 連携待ちバナー */}
+          {(pendingMatchCount ?? 0) > 0 && (
+            <Link href="/line/pending-matches"
+              className="card p-4 flex items-center gap-3 transition-all hover:shadow-md active:scale-[0.98]"
+              style={{ borderLeft: "3px solid var(--terra)" }}>
+              <span className="text-2xl">🔔</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">LINE 連携待ち</p>
+                <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                  友だち追加された方の顧客紐付けが必要です
+                </p>
+              </div>
+              <span className="flex-shrink-0 text-sm font-bold px-2.5 py-1 rounded-full"
+                style={{ background: "var(--terra)", color: "white" }}>
+                {pendingMatchCount}件
+              </span>
+            </Link>
+          )}
 
           {/* AUTO OFFER ENGINE — 準備中 */}
           <div className="card p-5 lg:p-6 relative overflow-hidden" style={{ background: "var(--ink)", color: "var(--paper)" }}>

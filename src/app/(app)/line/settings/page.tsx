@@ -14,6 +14,7 @@ interface SettingsData {
   line_channel_id: string;
   line_channel_secret: string;
   line_access_token: string;
+  line_add_friend_url: string;
   inactive_threshold_days: number;
   min_resend_interval_days: number;
   auto_offer_enabled: boolean;
@@ -39,6 +40,7 @@ export default function LineSettingsPage() {
     line_channel_id: "",
     line_channel_secret: "",
     line_access_token: "",
+    line_add_friend_url: "",
   });
   const [autoOffer, setAutoOffer] = useState({
     inactive_threshold_days: 60,
@@ -59,6 +61,7 @@ export default function LineSettingsPage() {
         line_channel_id: data.line_channel_id,
         line_channel_secret: data.line_channel_secret,
         line_access_token: data.line_access_token,
+        line_add_friend_url: data.line_add_friend_url,
       });
       setAutoOffer({
         inactive_threshold_days: data.inactive_threshold_days,
@@ -88,6 +91,7 @@ export default function LineSettingsPage() {
         line_channel_id: data.line_channel_id,
         line_channel_secret: data.line_channel_secret,
         line_access_token: data.line_access_token,
+        line_add_friend_url: data.line_add_friend_url,
       });
       setCredStatus("saved");
     } catch {
@@ -194,6 +198,21 @@ export default function LineSettingsPage() {
               placeholder="既存値は伏字で表示されます"
               value={credentials.line_access_token}
               onChange={(e) => setCredentials((p) => ({ ...p, line_access_token: e.target.value }))}
+              className="h-11 text-sm"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="add_friend_url">友だち追加 URL</Label>
+            <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
+              LINE Official Account Manager の「友だち追加」QR コードのリンク URL を貼り付けてください
+            </p>
+            <Input
+              id="add_friend_url"
+              type="url"
+              placeholder="https://line.me/R/ti/p/@xxxxxxx"
+              value={credentials.line_add_friend_url}
+              onChange={(e) => setCredentials((p) => ({ ...p, line_add_friend_url: e.target.value }))}
               className="h-11 text-sm"
             />
           </div>

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { formatBookingTime } from "@/lib/format-booking-time";
 import { getStatusBadge } from "@/lib/booking-status";
 import { formatLineStatus, toneColor, type LineFollowStatus } from "@/lib/customer/line-status";
+import { LineInviteButton } from "@/components/customer/line-invite-button";
 
 // TODO: 認証実装後、ログイン中のサロンIDに置き換える
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
@@ -56,6 +58,13 @@ export default async function CustomerDetailPage({
     .single();
 
   if (!customer) notFound();
+
+  const adminClient = createAdminClient();
+  const { data: salon } = await adminClient
+    .from("salons")
+    .select("line_add_friend_url")
+    .eq("id", DEFAULT_SALON_ID)
+    .single();
 
   const { data: pets } = await supabase
     .from("pets")
@@ -137,11 +146,16 @@ export default async function CustomerDetailPage({
             <span style={{ color: "var(--ink-soft)" }}>電話番号</span>
             <span className="font-medium">{customer.phone ?? "未登録"}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             <span style={{ color: "var(--ink-soft)" }}>LINE 連携</span>
-            <span className="font-medium" style={{ color: toneColor(formatLineStatus(customer.line_user_id, customer.line_follow_status as LineFollowStatus, customer.line_followed_at).tone) }}>
-              {formatLineStatus(customer.line_user_id, customer.line_follow_status as LineFollowStatus, customer.line_followed_at).label}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-medium" style={{ color: toneColor(formatLineStatus(customer.line_user_id, customer.line_follow_status as LineFollowStatus, customer.line_followed_at).tone) }}>
+                {formatLineStatus(customer.line_user_id, customer.line_follow_status as LineFollowStatus, customer.line_followed_at).label}
+              </span>
+              {(!customer.line_user_id && (customer.line_follow_status == null || customer.line_follow_status === "unfollowed")) && (
+                <LineInviteButton addFriendUrl={salon?.line_add_friend_url ?? null} />
+              )}
+            </div>
           </div>
           {showStats && (
             <div className="pt-2 mt-2" style={{ borderTop: "1px solid rgba(26,26,46,0.06)" }}>

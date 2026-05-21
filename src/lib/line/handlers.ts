@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import { parseIdentityMessage } from "./parse-identity-message";
 import type {
   LineFollowEvent,
   LineUnfollowEvent,
@@ -75,10 +76,10 @@ export async function handleMessageEvent(
   const lineUserId = event.source.userId;
   const supabase = createAdminClient();
 
-  // 既存顧客を line_user_id で検索(照合できない場合は NULL)
+  // 既存顧客を line_user_id で検索
   const { data: customer } = await supabase
     .from("customers")
-    .select("id")
+    .select("id, name")
     .eq("salon_id", salonId)
     .eq("line_user_id", lineUserId)
     .maybeSingle();
@@ -97,4 +98,32 @@ export async function handleMessageEvent(
     line_message_id: event.message.id,
     sent_at: new Date(event.timestamp).toISOString(),
   });
+
+  // 「(未特定 LINE ユーザー)」のメッセージのみパース処理を実行
+  if (
+    customer &&
+    customer.name.startsWith("(未特定") &&
+    event.message.type === "text" &&
+    "text" in event.message
+  ) {
+    const parsed = parseIdentityMessage(event.message.text);
+    if (parsed) {
+      await supabase
+        .from("customers")
+        .update({
+          line_pending_data: {
+            line_pending: {
+              rawText: parsed.rawText,
+              parsed: {
+                ownerName: parsed.ownerName,
+                petName: parsed.petName,
+                confidence: parsed.confidence,
+              },
+              candidatesFetchedAt: new Date().toISOString(),
+            },
+          },
+        })
+        .eq("id", customer.id);
+    }
+  }
 }

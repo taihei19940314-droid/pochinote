@@ -18,7 +18,7 @@ export async function GET(): Promise<NextResponse> {
   const { data, error } = await supabase
     .from("salons")
     .select(
-      "line_channel_id, line_channel_secret, line_access_token, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled"
+      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled"
     )
     .eq("id", DEFAULT_SALON_ID)
     .single();
@@ -31,6 +31,7 @@ export async function GET(): Promise<NextResponse> {
     line_channel_id: data.line_channel_id ?? "",
     line_channel_secret: maskSecret(data.line_channel_secret),
     line_access_token: maskSecret(data.line_access_token),
+    line_add_friend_url: data.line_add_friend_url ?? "",
     inactive_threshold_days: data.inactive_threshold_days,
     min_resend_interval_days: data.min_resend_interval_days,
     auto_offer_enabled: data.auto_offer_enabled,
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     line_channel_id?: string;
     line_channel_secret?: string;
     line_access_token?: string;
+    line_add_friend_url?: string;
     inactive_threshold_days?: number;
     min_resend_interval_days?: number;
     auto_offer_enabled?: boolean;
@@ -58,6 +60,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   if (body.line_access_token !== undefined && !isMasked(body.line_access_token)) {
     updates.line_access_token = body.line_access_token || null;
+  }
+  if (body.line_add_friend_url !== undefined) {
+    updates.line_add_friend_url = body.line_add_friend_url || null;
   }
   if (body.inactive_threshold_days !== undefined) {
     updates.inactive_threshold_days = body.inactive_threshold_days;
@@ -79,7 +84,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .update(updates)
     .eq("id", DEFAULT_SALON_ID)
     .select(
-      "line_channel_id, line_channel_secret, line_access_token, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled"
+      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled"
     )
     .single();
 
@@ -91,6 +96,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     line_channel_id: data.line_channel_id ?? "",
     line_channel_secret: maskSecret(data.line_channel_secret),
     line_access_token: maskSecret(data.line_access_token),
+    line_add_friend_url: data.line_add_friend_url ?? "",
     inactive_threshold_days: data.inactive_threshold_days,
     min_resend_interval_days: data.min_resend_interval_days,
     auto_offer_enabled: data.auto_offer_enabled,
