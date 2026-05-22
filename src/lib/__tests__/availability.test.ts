@@ -11,6 +11,7 @@ import {
   detectAvailableSlots,
   jstDateTimeToUtc,
   getJstDateStr,
+  ceilToMinutes,
   type Booking,
   type BusinessSettings,
   type AvailableSlot,
@@ -225,6 +226,98 @@ if (s5result.length >= 2) {
     "2件目: 13:30-18:00 270分 3枠",
     s5result[1].duration_minutes === 270 && s5result[1].slot_count === 3,
     `実際: ${s5result[1].duration_minutes}分 ${s5result[1].slot_count}枠`
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// シナリオ6: リードタイム後の開始時刻が 15 分単位に切り上がる
+//   現在 14:32 JST、リードタイム 60 分
+//   → minStart = 15:32 → ceil(15min) → 15:45
+//   期待: 開始 15:45、終了 20:00、duration=255分、slot_count=2
+// ─────────────────────────────────────────────────────────
+console.log("\n【シナリオ6】リードタイム後の開始が 15 分切り上げ (14:32 + 60 min → 15:45)");
+
+const s6date = "2026-05-26"; // 火曜
+const s6now = jstDateTimeToUtc(s6date, "14:32");
+
+const s6result = detectAvailableSlots({
+  targetDates: [s6date],
+  now: s6now,
+  settings: { ...BASE_SETTINGS, business_hours_end: "20:00", min_lead_time_minutes: 60 },
+  bookings: [],
+});
+
+console.log("  結果:", s6result.map(slotLabel));
+assert("空き枠が1件", s6result.length === 1, `実際: ${s6result.length}件`);
+if (s6result.length >= 1) {
+  const slot = s6result[0];
+  const startJst = new Date(new Date(slot.start).getTime() + 9 * 3600_000);
+  assert(
+    "開始が 15:45 JST",
+    startJst.getUTCHours() === 15 && startJst.getUTCMinutes() === 45,
+    `実際: ${startJst.getUTCHours()}:${String(startJst.getUTCMinutes()).padStart(2,"0")}`
+  );
+  assert("duration_minutes = 255", slot.duration_minutes === 255, `実際: ${slot.duration_minutes}`);
+  assert("slot_count = 2", slot.slot_count === 2, `実際: ${slot.slot_count}`);
+}
+
+// ─────────────────────────────────────────────────────────
+// シナリオ7: リードタイム 0 分の即時オファー
+//   現在 14:32 JST、リードタイム 0
+//   → minStart = 14:32 → ceil(15min) → 14:45
+//   期待: 開始 14:45
+// ─────────────────────────────────────────────────────────
+console.log("\n【シナリオ7】リードタイム 0 分 (14:32 → 14:45)");
+
+const s7date = "2026-05-26";
+const s7now = jstDateTimeToUtc(s7date, "14:32");
+
+const s7result = detectAvailableSlots({
+  targetDates: [s7date],
+  now: s7now,
+  settings: { ...BASE_SETTINGS, business_hours_end: "20:00", min_lead_time_minutes: 0 },
+  bookings: [],
+});
+
+console.log("  結果:", s7result.map(slotLabel));
+assert("空き枠が1件", s7result.length === 1, `実際: ${s7result.length}件`);
+if (s7result.length >= 1) {
+  const slot = s7result[0];
+  const startJst = new Date(new Date(slot.start).getTime() + 9 * 3600_000);
+  assert(
+    "開始が 14:45 JST",
+    startJst.getUTCHours() === 14 && startJst.getUTCMinutes() === 45,
+    `実際: ${startJst.getUTCHours()}:${String(startJst.getUTCMinutes()).padStart(2,"0")}`
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// シナリオ8: 現在時刻が 15 分境界ちょうど → 切り上げなし
+//   現在 14:30 JST、リードタイム 0
+//   → minStart = 14:30 → ceil(15min) → 14:30(変化なし)
+//   期待: 開始 14:30
+// ─────────────────────────────────────────────────────────
+console.log("\n【シナリオ8】現在時刻が 15 分境界ちょうど (14:30 → 14:30)");
+
+const s8date = "2026-05-26";
+const s8now = jstDateTimeToUtc(s8date, "14:30");
+
+const s8result = detectAvailableSlots({
+  targetDates: [s8date],
+  now: s8now,
+  settings: { ...BASE_SETTINGS, business_hours_end: "20:00", min_lead_time_minutes: 0 },
+  bookings: [],
+});
+
+console.log("  結果:", s8result.map(slotLabel));
+assert("空き枠が1件", s8result.length === 1, `実際: ${s8result.length}件`);
+if (s8result.length >= 1) {
+  const slot = s8result[0];
+  const startJst = new Date(new Date(slot.start).getTime() + 9 * 3600_000);
+  assert(
+    "開始が 14:30 JST(切り上げなし)",
+    startJst.getUTCHours() === 14 && startJst.getUTCMinutes() === 30,
+    `実際: ${startJst.getUTCHours()}:${String(startJst.getUTCMinutes()).padStart(2,"0")}`
   );
 }
 

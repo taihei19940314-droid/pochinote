@@ -41,6 +41,15 @@ export function getJstDateStr(d: Date): string {
   return `${Y}-${M}-${D}`;
 }
 
+// Date を指定分単位に切り上げる
+// 例: 14:32 を 15 分単位 → 14:45
+// 例: 15:00 ちょうど → 15:00(切り上げなし)
+export function ceilToMinutes(d: Date, unit: number): Date {
+  const ms = d.getTime();
+  const unitMs = unit * 60 * 1000;
+  return new Date(Math.ceil(ms / unitMs) * unitMs);
+}
+
 // "YYYY-MM-DD"(JST) の曜日を返す (0=日, 6=土)
 // JST カレンダー日付は UTC midnight の曜日と同一
 function getWeekdayOfJstDate(dateStr: string): number {
@@ -99,9 +108,10 @@ export function detectAvailableSlots(args: {
     const closeUtc = jstDateTimeToUtc(date, business_hours_end);
 
     // 当日のみリードタイムを適用
+    // now + leadTime を 15 分単位に切り上げて effectiveOpen とする
     let effectiveOpen = openUtc;
     if (date === todayJst) {
-      const minStart = new Date(now.getTime() + leadTimeMs);
+      const minStart = ceilToMinutes(new Date(now.getTime() + leadTimeMs), 15);
       if (minStart.getTime() > effectiveOpen.getTime()) {
         effectiveOpen = minStart;
       }
