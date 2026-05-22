@@ -3,6 +3,8 @@ import { ChevronLeft } from "lucide-react";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { detectInactiveCustomers } from "@/lib/inactive-customers";
 
+export const dynamic = "force-dynamic";
+
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -20,68 +22,44 @@ export default async function OffersPreviewPage() {
   const supabase = createAdminClient();
   const now = new Date();
 
-  const { data: salon, error: salonError } = await supabase
+  const { data: salon } = await supabase
     .from("salons")
     .select("inactive_threshold_days, min_resend_interval_days")
     .eq("id", DEFAULT_SALON_ID)
     .single();
 
-  console.log("[DEBUG preview] salon:", JSON.stringify(salon), "salonError:", salonError?.message);
-
   const inactiveThresholdDays = salon?.inactive_threshold_days ?? 60;
   const minResendIntervalDays = salon?.min_resend_interval_days ?? 7;
 
-  console.log("[DEBUG preview] thresholds:", { inactiveThresholdDays, minResendIntervalDays });
-
-  const { data: customers, error: customersError } = await supabase
+  const { data: customers } = await supabase
     .from("customers")
     .select("id, name, line_user_id, line_follow_status, last_visit_at")
     .eq("salon_id", DEFAULT_SALON_ID);
 
-  console.log("[DEBUG preview] customers count:", customers?.length, "error:", customersError?.message);
-  console.log("[DEBUG preview] customers:", JSON.stringify(customers?.map((c) => ({
-    name: c.name,
-    line_user_id: c.line_user_id ? "あり" : "NULL",
-    line_follow_status: c.line_follow_status,
-    last_visit_at: c.last_visit_at,
-  }))));
-
   const customerIds = (customers ?? []).map((c) => c.id);
-  const { data: pets, error: petsError } =
+  const { data: pets } =
     customerIds.length > 0
       ? await supabase
           .from("pets")
           .select("customer_id, name, breed")
           .in("customer_id", customerIds)
-      : { data: [], error: null };
-
-  console.log("[DEBUG preview] pets count:", pets?.length, "error:", petsError?.message);
+      : { data: [] };
 
   const cutoff = new Date(now.getTime() - minResendIntervalDays * 24 * 60 * 60 * 1000);
-  const { data: recentOffers, error: offersError } = await supabase
+  const { data: recentOffers } = await supabase
     .from("offer_recipients")
     .select("customer_id, sent_at")
     .eq("salon_id", DEFAULT_SALON_ID)
     .gte("sent_at", cutoff.toISOString());
 
-  console.log("[DEBUG preview] recentOffers count:", recentOffers?.length, "error:", offersError?.message);
-
-  const args = {
+  const candidates = detectInactiveCustomers({
     now,
     customers: customers ?? [],
     pets: pets ?? [],
     recentOffers: recentOffers ?? [],
     inactiveThresholdDays,
     minResendIntervalDays,
-  };
-
-  const candidates = detectInactiveCustomers(args);
-
-  console.log("[DEBUG preview] candidates count:", candidates.length);
-  console.log("[DEBUG preview] candidates:", JSON.stringify(candidates.map((c) => ({
-    name: c.customerName,
-    daysSinceLastVisit: c.daysSinceLastVisit,
-  }))));
+  });
 
   return (
     <div className="max-w-lg mx-auto">
