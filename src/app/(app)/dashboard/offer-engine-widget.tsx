@@ -62,7 +62,7 @@ function SlotCard({ slot }: { slot: AvailableSlot }) {
         </span>
       </div>
       <Link
-        href="/line/offers/preview"
+        href={`/line/offers/preview?start=${encodeURIComponent(slot.start)}&end=${encodeURIComponent(slot.end)}&slotCount=${slot.slot_count}`}
         className="w-full py-2 rounded-lg text-xs font-semibold tracking-wide text-center block transition-opacity hover:opacity-90"
         style={{
           background: "rgba(217,119,87,0.18)",

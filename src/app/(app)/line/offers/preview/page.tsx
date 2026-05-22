@@ -2,23 +2,57 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { detectInactiveCustomers } from "@/lib/inactive-customers";
+import { getJstDateStr } from "@/lib/availability";
+import { PreviewClient, type SlotInfo, type EmptySummary } from "./preview-client";
 
 export const dynamic = "force-dynamic";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
-
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
-function formatDate(isoStr: string): string {
-  const d = new Date(isoStr);
-  const jst = new Date(d.getTime() + 9 * 3600_000);
-  const M = jst.getUTCMonth() + 1;
-  const D = jst.getUTCDate();
-  const w = WEEKDAY_LABELS[jst.getUTCDay()];
+function toHHMM(iso: string): string {
+  const jst = new Date(new Date(iso).getTime() + 9 * 3600_000);
+  return `${String(jst.getUTCHours()).padStart(2, "0")}:${String(jst.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+function buildDateLabel(startIso: string, now: Date): string {
+  const slotDate = getJstDateStr(new Date(startIso));
+  const todayJst = getJstDateStr(now);
+  const tomorrowJst = getJstDateStr(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+
+  if (slotDate === todayJst) return "今日";
+  if (slotDate === tomorrowJst) return "明日";
+
+  const [Y, M, D] = slotDate.split("-").map(Number);
+  const w = WEEKDAY_LABELS[new Date(Date.UTC(Y, M - 1, D)).getUTCDay()];
   return `${M}/${D}(${w})`;
 }
 
-export default async function OffersPreviewPage() {
+function parseSlotInfo(
+  start: string | undefined,
+  end: string | undefined,
+  slotCount: string | undefined,
+  now: Date,
+): SlotInfo | undefined {
+  if (!start || !end || !slotCount) return undefined;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const count = parseInt(slotCount, 10);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || isNaN(count)) return undefined;
+  return {
+    dateLabel: buildDateLabel(start, now),
+    startHHMM: toHHMM(start),
+    endHHMM: toHHMM(end),
+    slotCount: count,
+  };
+}
+
+export default async function OffersPreviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ start?: string; end?: string; slotCount?: string }>;
+}) {
+  const params = await searchParams;
   const supabase = createAdminClient();
   const now = new Date();
 
@@ -52,14 +86,28 @@ export default async function OffersPreviewPage() {
     .eq("salon_id", DEFAULT_SALON_ID)
     .gte("sent_at", cutoff.toISOString());
 
+  const allCustomers = customers ?? [];
+
+  // 0件サマリー計算
+  const linkedFollowed = allCustomers.filter(
+    (c) => c.line_user_id && c.line_follow_status === "followed"
+  );
+  const emptySummary: EmptySummary = {
+    totalLinkedCustomers: linkedFollowed.length,
+    customersWithoutVisitHistory: linkedFollowed.filter((c) => !c.last_visit_at).length,
+    inactiveThresholdDays,
+  };
+
   const candidates = detectInactiveCustomers({
     now,
-    customers: customers ?? [],
+    customers: allCustomers,
     pets: pets ?? [],
     recentOffers: recentOffers ?? [],
     inactiveThresholdDays,
     minResendIntervalDays,
   });
+
+  const slotInfo = parseSlotInfo(params.start, params.end, params.slotCount, now);
 
   return (
     <div className="max-w-lg mx-auto">
@@ -81,46 +129,11 @@ export default async function OffersPreviewPage() {
         </span>
       </div>
 
-      {candidates.length === 0 ? (
-        <div className="card p-8 text-center">
-          <div className="text-3xl mb-4">🎉</div>
-          <div className="font-semibold mb-2">離脱気味のお客様はいません</div>
-          <p className="text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
-            全員が{inactiveThresholdDays}日以内にご来店されています。
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {candidates.map((c) => (
-            <div key={c.customerId} className="card p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-semibold truncate">{c.customerName}</div>
-                  <div className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
-                    {c.petName}
-                    {c.petBreed ? `（${c.petBreed}）` : ""}
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div
-                    className="text-lg font-bold tabular-nums"
-                    style={{ color: "var(--sage)" }}
-                  >
-                    {c.daysSinceLastVisit}日
-                  </div>
-                  <div className="text-xs" style={{ color: "var(--ink-soft)" }}>
-                    最終来店 {formatDate(c.lastVisitAt.toISOString())}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          <p className="text-xs text-center mt-2" style={{ color: "var(--ink-soft)" }}>
-            {candidates.length}件 — 送信機能は近日公開予定です
-          </p>
-        </div>
-      )}
+      <PreviewClient
+        candidates={candidates}
+        slotInfo={slotInfo}
+        emptySummary={emptySummary}
+      />
     </div>
   );
 }
