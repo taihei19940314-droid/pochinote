@@ -61,16 +61,16 @@ function SlotCard({ slot }: { slot: AvailableSlot }) {
           {slot.slot_count}枠分
         </span>
       </div>
-      <button
-        disabled
-        className="w-full py-2 rounded-lg text-xs font-semibold tracking-wide cursor-not-allowed"
+      <Link
+        href="/line/offers/preview"
+        className="w-full py-2 rounded-lg text-xs font-semibold tracking-wide text-center block transition-opacity hover:opacity-90"
         style={{
-          background: "rgba(250,247,242,0.06)",
-          color: "rgba(250,247,242,0.3)",
+          background: "rgba(217,119,87,0.18)",
+          color: "var(--terra)",
         }}
       >
-        オファー候補を見る（準備中）
-      </button>
+        オファー候補を見る →
+      </Link>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function LineOffersPage() {
   return (
@@ -15,13 +15,19 @@ export default function LineOffersPage() {
 
       <h1 className="font-display text-2xl font-semibold tracking-tight mb-6">オファー候補</h1>
 
-      <div className="card p-8 text-center">
-        <div className="text-3xl mb-4">📣</div>
-        <div className="font-semibold mb-2">準備中</div>
-        <p className="text-sm leading-relaxed" style={{ color: "var(--ink-soft)" }}>
-          離脱気味の常連さんへのオファー候補を、ここで確認・送信できます。
-          現在開発中です。
-        </p>
+      <div className="flex flex-col gap-3">
+        <Link
+          href="/line/offers/preview"
+          className="card p-4 flex items-center justify-between gap-3 transition-opacity hover:opacity-80"
+        >
+          <div>
+            <div className="font-semibold">離脱気味のお客様を確認</div>
+            <div className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
+              一定期間ご来店のない LINE 登録済みのお客様一覧
+            </div>
+          </div>
+          <ChevronRight size={18} style={{ color: "var(--ink-soft)", flexShrink: 0 }} />
+        </Link>
       </div>
     </div>
   );
