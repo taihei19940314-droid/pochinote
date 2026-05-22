@@ -27,6 +27,7 @@ interface SettingsData {
     business_hours_end: string;
     closed_weekdays: number[];
     default_slot_minutes: number;
+    min_lead_time_minutes: number;
   };
 }
 
@@ -70,8 +71,9 @@ export default function LineSettingsPage() {
   const [businessSettings, setBusinessSettings] = useState({
     business_hours_start: "09:00",
     business_hours_end: "18:00",
-    closed_weekdays: [0],
+    closed_weekdays: [] as number[],
     default_slot_minutes: 90,
+    min_lead_time_minutes: 120,
   });
   const [credStatus, setCredStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [autoStatus, setAutoStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -101,6 +103,7 @@ export default function LineSettingsPage() {
         business_hours_end: data.businessSettings.business_hours_end,
         closed_weekdays: data.businessSettings.closed_weekdays,
         default_slot_minutes: data.businessSettings.default_slot_minutes,
+        min_lead_time_minutes: data.businessSettings.min_lead_time_minutes,
       });
     } finally {
       setLoading(false);
@@ -448,6 +451,32 @@ export default function LineSettingsPage() {
                   setBusinessSettings((p) => ({
                     ...p,
                     default_slot_minutes: Number(e.target.value),
+                  }))
+                }
+                className="h-11 w-28 text-sm"
+              />
+              <span className="text-sm" style={{ color: "var(--ink-soft)" }}>分</span>
+            </div>
+          </div>
+
+          {/* 最短リードタイム */}
+          <div className="space-y-1.5">
+            <Label htmlFor="lead_time_minutes">最短リードタイム</Label>
+            <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
+              現在から何分先以降の空き枠を検出するか
+            </p>
+            <div className="flex items-center gap-2">
+              <Input
+                id="lead_time_minutes"
+                type="number"
+                min={0}
+                max={1440}
+                step={15}
+                value={businessSettings.min_lead_time_minutes}
+                onChange={(e) =>
+                  setBusinessSettings((p) => ({
+                    ...p,
+                    min_lead_time_minutes: Number(e.target.value),
                   }))
                 }
                 className="h-11 w-28 text-sm"

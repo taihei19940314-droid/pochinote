@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes } =
+  const { business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes, min_lead_time_minutes } =
     body as Record<string, unknown>;
 
   // business_hours_start
@@ -83,6 +83,19 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // min_lead_time_minutes: integer 0–1440
+  if (
+    typeof min_lead_time_minutes !== "number" ||
+    !Number.isInteger(min_lead_time_minutes) ||
+    min_lead_time_minutes < 0 ||
+    min_lead_time_minutes > 1440
+  ) {
+    return NextResponse.json(
+      { error: "min_lead_time_minutes は 0〜1440 の整数で指定してください" },
+      { status: 400 }
+    );
+  }
+
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("salons")
@@ -91,9 +104,10 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       business_hours_end: normalizeTime(business_hours_end),
       closed_weekdays,
       default_slot_minutes,
+      min_lead_time_minutes,
     })
     .eq("id", DEFAULT_SALON_ID)
-    .select("business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes")
+    .select("business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes, min_lead_time_minutes")
     .single();
 
   if (error || !data) {

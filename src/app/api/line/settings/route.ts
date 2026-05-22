@@ -18,7 +18,7 @@ export async function GET(): Promise<NextResponse> {
   const { data, error } = await supabase
     .from("salons")
     .select(
-      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled, business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes"
+      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled, business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes, min_lead_time_minutes"
     )
     .eq("id", DEFAULT_SALON_ID)
     .single();
@@ -44,6 +44,7 @@ export async function GET(): Promise<NextResponse> {
       business_hours_end: (data.business_hours_end ?? "18:00").slice(0, 5),
       closed_weekdays: data.closed_weekdays ?? [],
       default_slot_minutes: data.default_slot_minutes ?? 90,
+      min_lead_time_minutes: data.min_lead_time_minutes ?? 120,
     },
   });
 }
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .update(updates)
     .eq("id", DEFAULT_SALON_ID)
     .select(
-      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled, business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes"
+      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled, business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes, min_lead_time_minutes"
     )
     .single();
 
@@ -119,6 +120,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       business_hours_end: (data.business_hours_end ?? "18:00").slice(0, 5),
       closed_weekdays: data.closed_weekdays ?? [],
       default_slot_minutes: data.default_slot_minutes ?? 90,
+      min_lead_time_minutes: data.min_lead_time_minutes ?? 120,
     },
   });
 }
