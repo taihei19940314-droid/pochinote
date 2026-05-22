@@ -18,7 +18,7 @@ export async function GET(): Promise<NextResponse> {
   const { data, error } = await supabase
     .from("salons")
     .select(
-      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled"
+      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled, business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes"
     )
     .eq("id", DEFAULT_SALON_ID)
     .single();
@@ -28,13 +28,23 @@ export async function GET(): Promise<NextResponse> {
   }
 
   return NextResponse.json({
-    line_channel_id: data.line_channel_id ?? "",
-    line_channel_secret: maskSecret(data.line_channel_secret),
-    line_access_token: maskSecret(data.line_access_token),
-    line_add_friend_url: data.line_add_friend_url ?? "",
-    inactive_threshold_days: data.inactive_threshold_days,
-    min_resend_interval_days: data.min_resend_interval_days,
-    auto_offer_enabled: data.auto_offer_enabled,
+    credentials: {
+      line_channel_id: data.line_channel_id ?? "",
+      line_channel_secret: maskSecret(data.line_channel_secret),
+      line_access_token: maskSecret(data.line_access_token),
+      line_add_friend_url: data.line_add_friend_url ?? "",
+    },
+    autoOffer: {
+      inactive_threshold_days: data.inactive_threshold_days,
+      min_resend_interval_days: data.min_resend_interval_days,
+      auto_offer_enabled: data.auto_offer_enabled,
+    },
+    businessSettings: {
+      business_hours_start: data.business_hours_start ?? "09:00",
+      business_hours_end: data.business_hours_end ?? "18:00",
+      closed_weekdays: data.closed_weekdays ?? [0],
+      default_slot_minutes: data.default_slot_minutes ?? 90,
+    },
   });
 }
 
@@ -84,7 +94,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .update(updates)
     .eq("id", DEFAULT_SALON_ID)
     .select(
-      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled"
+      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled, business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes"
     )
     .single();
 
@@ -93,12 +103,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   return NextResponse.json({
-    line_channel_id: data.line_channel_id ?? "",
-    line_channel_secret: maskSecret(data.line_channel_secret),
-    line_access_token: maskSecret(data.line_access_token),
-    line_add_friend_url: data.line_add_friend_url ?? "",
-    inactive_threshold_days: data.inactive_threshold_days,
-    min_resend_interval_days: data.min_resend_interval_days,
-    auto_offer_enabled: data.auto_offer_enabled,
+    credentials: {
+      line_channel_id: data.line_channel_id ?? "",
+      line_channel_secret: maskSecret(data.line_channel_secret),
+      line_access_token: maskSecret(data.line_access_token),
+      line_add_friend_url: data.line_add_friend_url ?? "",
+    },
+    autoOffer: {
+      inactive_threshold_days: data.inactive_threshold_days,
+      min_resend_interval_days: data.min_resend_interval_days,
+      auto_offer_enabled: data.auto_offer_enabled,
+    },
+    businessSettings: {
+      business_hours_start: data.business_hours_start ?? "09:00",
+      business_hours_end: data.business_hours_end ?? "18:00",
+      closed_weekdays: data.closed_weekdays ?? [0],
+      default_slot_minutes: data.default_slot_minutes ?? 90,
+    },
   });
 }

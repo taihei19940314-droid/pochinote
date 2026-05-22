@@ -11,14 +11,34 @@ import { Button } from "@/components/ui/button";
 const WEBHOOK_URL = "https://triel-app.vercel.app/api/line/webhook";
 
 interface SettingsData {
-  line_channel_id: string;
-  line_channel_secret: string;
-  line_access_token: string;
-  line_add_friend_url: string;
-  inactive_threshold_days: number;
-  min_resend_interval_days: number;
-  auto_offer_enabled: boolean;
+  credentials: {
+    line_channel_id: string;
+    line_channel_secret: string;
+    line_access_token: string;
+    line_add_friend_url: string;
+  };
+  autoOffer: {
+    inactive_threshold_days: number;
+    min_resend_interval_days: number;
+    auto_offer_enabled: boolean;
+  };
+  businessSettings: {
+    business_hours_start: string;
+    business_hours_end: string;
+    closed_weekdays: number[];
+    default_slot_minutes: number;
+  };
 }
+
+const WEEKDAYS = [
+  { label: "日", value: 0 },
+  { label: "月", value: 1 },
+  { label: "火", value: 2 },
+  { label: "水", value: 3 },
+  { label: "木", value: 4 },
+  { label: "金", value: 5 },
+  { label: "土", value: 6 },
+];
 
 function SaveBanner({ status }: { status: "idle" | "saving" | "saved" | "error" }) {
   if (status === "idle") return null;
@@ -47,8 +67,16 @@ export default function LineSettingsPage() {
     min_resend_interval_days: 7,
     auto_offer_enabled: false,
   });
+  const [businessSettings, setBusinessSettings] = useState({
+    business_hours_start: "09:00",
+    business_hours_end: "18:00",
+    closed_weekdays: [0],
+    default_slot_minutes: 90,
+  });
   const [credStatus, setCredStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [autoStatus, setAutoStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [bizStatus, setBizStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [bizError, setBizError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -58,15 +86,21 @@ export default function LineSettingsPage() {
       if (!res.ok) return;
       const data: SettingsData = await res.json();
       setCredentials({
-        line_channel_id: data.line_channel_id,
-        line_channel_secret: data.line_channel_secret,
-        line_access_token: data.line_access_token,
-        line_add_friend_url: data.line_add_friend_url,
+        line_channel_id: data.credentials.line_channel_id,
+        line_channel_secret: data.credentials.line_channel_secret,
+        line_access_token: data.credentials.line_access_token,
+        line_add_friend_url: data.credentials.line_add_friend_url,
       });
       setAutoOffer({
-        inactive_threshold_days: data.inactive_threshold_days,
-        min_resend_interval_days: data.min_resend_interval_days,
-        auto_offer_enabled: data.auto_offer_enabled,
+        inactive_threshold_days: data.autoOffer.inactive_threshold_days,
+        min_resend_interval_days: data.autoOffer.min_resend_interval_days,
+        auto_offer_enabled: data.autoOffer.auto_offer_enabled,
+      });
+      setBusinessSettings({
+        business_hours_start: data.businessSettings.business_hours_start,
+        business_hours_end: data.businessSettings.business_hours_end,
+        closed_weekdays: data.businessSettings.closed_weekdays,
+        default_slot_minutes: data.businessSettings.default_slot_minutes,
       });
     } finally {
       setLoading(false);
@@ -88,10 +122,10 @@ export default function LineSettingsPage() {
       if (!res.ok) throw new Error();
       const data: SettingsData = await res.json();
       setCredentials({
-        line_channel_id: data.line_channel_id,
-        line_channel_secret: data.line_channel_secret,
-        line_access_token: data.line_access_token,
-        line_add_friend_url: data.line_add_friend_url,
+        line_channel_id: data.credentials.line_channel_id,
+        line_channel_secret: data.credentials.line_channel_secret,
+        line_access_token: data.credentials.line_access_token,
+        line_add_friend_url: data.credentials.line_add_friend_url,
       });
       setCredStatus("saved");
     } catch {
@@ -118,6 +152,40 @@ export default function LineSettingsPage() {
     }
   }
 
+  async function saveBusinessSettings() {
+    setBizStatus("saving");
+    setBizError(null);
+    try {
+      const res = await fetch("/api/salons/business-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(businessSettings),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "保存に失敗しました");
+      }
+      setBizStatus("saved");
+    } catch (e) {
+      setBizStatus("error");
+      setBizError(e instanceof Error ? e.message : "保存に失敗しました");
+    } finally {
+      setTimeout(() => setBizStatus("idle"), 3000);
+    }
+  }
+
+  function toggleWeekday(value: number) {
+    setBusinessSettings((prev) => {
+      const exists = prev.closed_weekdays.includes(value);
+      return {
+        ...prev,
+        closed_weekdays: exists
+          ? prev.closed_weekdays.filter((d) => d !== value)
+          : [...prev.closed_weekdays, value].sort((a, b) => a - b),
+      };
+    });
+  }
+
   async function copyWebhookUrl() {
     await navigator.clipboard.writeText(WEBHOOK_URL);
     setCopied(true);
@@ -137,7 +205,7 @@ export default function LineSettingsPage() {
         </Link>
         <div className="h-8 w-48 rounded-lg mb-6 animate-pulse" style={{ background: "rgba(26,26,46,0.08)" }} />
         <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="card p-5">
               <div className="h-4 w-32 rounded mb-4 animate-pulse" style={{ background: "rgba(26,26,46,0.08)" }} />
               <div className="h-8 w-full rounded-lg animate-pulse" style={{ background: "rgba(26,26,46,0.06)" }} />
@@ -306,7 +374,109 @@ export default function LineSettingsPage() {
         </div>
       </div>
 
-      {/* セクション3: Webhook URL */}
+      {/* セクション3: 営業設定 */}
+      <div className="card p-5 mb-4">
+        <h2 className="font-semibold mb-1">営業設定</h2>
+        <p className="text-xs mb-4" style={{ color: "var(--ink-soft)" }}>
+          空き枠の自動検出に使われる設定です。
+        </p>
+
+        <div className="space-y-5">
+          {/* 営業時間 */}
+          <div className="space-y-1.5">
+            <Label>営業時間</Label>
+            <div className="flex items-center gap-3">
+              <Input
+                type="time"
+                value={businessSettings.business_hours_start}
+                onChange={(e) =>
+                  setBusinessSettings((p) => ({ ...p, business_hours_start: e.target.value }))
+                }
+                className="h-11 w-36 text-sm"
+              />
+              <span className="text-sm" style={{ color: "var(--ink-soft)" }}>〜</span>
+              <Input
+                type="time"
+                value={businessSettings.business_hours_end}
+                onChange={(e) =>
+                  setBusinessSettings((p) => ({ ...p, business_hours_end: e.target.value }))
+                }
+                className="h-11 w-36 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* 定休日 */}
+          <div className="space-y-2">
+            <Label>定休日</Label>
+            <div className="flex gap-2 flex-wrap">
+              {WEEKDAYS.map(({ label, value }) => {
+                const checked = businessSettings.closed_weekdays.includes(value);
+                return (
+                  <label
+                    key={value}
+                    className="flex items-center gap-1.5 cursor-pointer select-none"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleWeekday(value)}
+                      className="w-4 h-4 rounded accent-[color:var(--terra)]"
+                    />
+                    <span className="text-sm">{label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 1枠の長さ */}
+          <div className="space-y-1.5">
+            <Label htmlFor="slot_minutes">1枠の長さ</Label>
+            <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
+              小型犬で90分、大型犬で120分が目安です
+            </p>
+            <div className="flex items-center gap-2">
+              <Input
+                id="slot_minutes"
+                type="number"
+                min={30}
+                max={240}
+                step={15}
+                value={businessSettings.default_slot_minutes}
+                onChange={(e) =>
+                  setBusinessSettings((p) => ({
+                    ...p,
+                    default_slot_minutes: Number(e.target.value),
+                  }))
+                }
+                className="h-11 w-28 text-sm"
+              />
+              <span className="text-sm" style={{ color: "var(--ink-soft)" }}>分</span>
+            </div>
+          </div>
+        </div>
+
+        {bizError && bizStatus === "error" && (
+          <div className="mt-3 px-4 py-2.5 rounded-lg text-sm" style={{ background: "rgba(192,57,43,0.1)", color: "#c0392b" }}>
+            {bizError}
+          </div>
+        )}
+
+        <div className="mt-5">
+          <Button
+            onClick={saveBusinessSettings}
+            disabled={bizStatus === "saving"}
+            className="w-full h-11 font-semibold"
+            style={{ background: "var(--terra)", color: "white" }}
+          >
+            {bizStatus === "saving" ? "保存中..." : "営業設定を保存"}
+          </Button>
+          <SaveBanner status={bizStatus} />
+        </div>
+      </div>
+
+      {/* セクション4: Webhook URL */}
       <div className="card p-5">
         <h2 className="font-semibold mb-2">Webhook URL</h2>
         <p className="text-xs mb-3" style={{ color: "var(--ink-soft)" }}>
