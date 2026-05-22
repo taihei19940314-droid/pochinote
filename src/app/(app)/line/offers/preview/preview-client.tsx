@@ -119,7 +119,7 @@ export function PreviewClient({
       {candidates.length === 0 ? (
         <EmptySummarySection summary={emptySummary} />
       ) : (
-        <div className="flex flex-col gap-3 pb-24 lg:pb-16">
+        <div className="flex flex-col gap-3 pb-28 lg:pb-14">
           {candidates.map((c) => (
             <label
               key={c.customerId}
@@ -162,14 +162,9 @@ export function PreviewClient({
       {/* sticky フッター — 候補がある場合のみ表示 */}
       {candidates.length > 0 && (
         <div
-          className="fixed left-0 right-0 z-40 lg:left-64"
-          style={{
-            bottom: 0,
-            paddingBottom: "env(safe-area-inset-bottom)",
-          }}
+          className="fixed bottom-14 left-0 right-0 z-40 lg:bottom-0 lg:left-64"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
-          {/* モバイル: BottomTab(56px)分を上に積む */}
-          <div className="lg:hidden" style={{ height: 56 }} />
           <div
             className="px-4 py-3 flex items-center justify-between gap-4 border-t"
             style={{
