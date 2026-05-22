@@ -40,9 +40,9 @@ export async function GET(): Promise<NextResponse> {
       auto_offer_enabled: data.auto_offer_enabled,
     },
     businessSettings: {
-      business_hours_start: data.business_hours_start ?? "09:00",
-      business_hours_end: data.business_hours_end ?? "18:00",
-      closed_weekdays: data.closed_weekdays ?? [0],
+      business_hours_start: (data.business_hours_start ?? "09:00").slice(0, 5),
+      business_hours_end: (data.business_hours_end ?? "18:00").slice(0, 5),
+      closed_weekdays: data.closed_weekdays ?? [],
       default_slot_minutes: data.default_slot_minutes ?? 90,
     },
   });
@@ -115,9 +115,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       auto_offer_enabled: data.auto_offer_enabled,
     },
     businessSettings: {
-      business_hours_start: data.business_hours_start ?? "09:00",
-      business_hours_end: data.business_hours_end ?? "18:00",
-      closed_weekdays: data.closed_weekdays ?? [0],
+      business_hours_start: (data.business_hours_start ?? "09:00").slice(0, 5),
+      business_hours_end: (data.business_hours_end ?? "18:00").slice(0, 5),
+      closed_weekdays: data.closed_weekdays ?? [],
       default_slot_minutes: data.default_slot_minutes ?? 90,
     },
   });

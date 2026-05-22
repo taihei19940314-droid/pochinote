@@ -3,11 +3,17 @@ import { createAdminClient } from "@/utils/supabase/admin";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+// HH:MM または HH:MM:SS を受け入れる(PostgreSQL TIME 型は秒付きで返すため)
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 
 function toMinutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
+}
+
+// DB 保存前に HH:MM に正規化する
+function normalizeTime(t: string): string {
+  return t.slice(0, 5);
 }
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
@@ -81,8 +87,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   const { data, error } = await supabase
     .from("salons")
     .update({
-      business_hours_start,
-      business_hours_end,
+      business_hours_start: normalizeTime(business_hours_start),
+      business_hours_end: normalizeTime(business_hours_end),
       closed_weekdays,
       default_slot_minutes,
     })
