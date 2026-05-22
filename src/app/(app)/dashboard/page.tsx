@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { OfferEngineWidget } from "./offer-engine-widget";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 const SALON_NAME = "ぽちのてトリミング";
@@ -334,49 +335,8 @@ export default async function DashboardPage() {
             </Link>
           )}
 
-          {/* AUTO OFFER ENGINE — 準備中 */}
-          <div className="card p-5 lg:p-6 relative overflow-hidden" style={{ background: "var(--ink)", color: "var(--paper)" }}>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="text-[10px] tracking-[0.2em] uppercase mb-1" style={{ opacity: 0.5 }}>Auto Offer Engine</div>
-                <h2 className="font-display text-lg lg:text-xl font-semibold tracking-tight">
-                  空き枠の<br /><span style={{ color: "var(--terra)" }}>自動セールス</span>
-                </h2>
-              </div>
-              <span className="pill text-[10px]" style={{ background: "rgba(217,119,87,0.2)", color: "var(--terra)" }}>Coming Soon</span>
-            </div>
-
-            <div className="text-xs mb-5 leading-relaxed" style={{ opacity: 0.55 }}>
-              空き枠が出ると、条件にあう常連さんへ LINE で自動オファーを配信します。
-              施術中でも、トリエルが代わりにセールスします。
-            </div>
-
-            {/* プレースホルダーリスト */}
-            <div className="space-y-2 mb-5">
-              {[1,2,3].map((i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: "rgba(250,247,242,0.05)" }}>
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "rgba(217,119,87,0.3)" }} />
-                  <div className="dog-avatar flex-shrink-0" style={{ background: "rgba(217,119,87,0.1)", opacity: 0.4 }}>🐕</div>
-                  <div className="flex-1">
-                    <div className="h-2.5 rounded-full w-24 mb-1.5" style={{ background: "rgba(250,247,242,0.1)" }} />
-                    <div className="h-2 rounded-full w-16" style={{ background: "rgba(250,247,242,0.06)" }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="py-3 rounded-lg text-center text-xs font-semibold tracking-wider uppercase" style={{ background: "rgba(250,247,242,0.06)", color: "rgba(250,247,242,0.35)" }}>
-              LINE 連携準備中
-            </div>
-
-            <a
-              href="/line"
-              className="mt-3 flex items-center justify-center gap-2 py-3 rounded-lg text-xs font-semibold tracking-wide transition-opacity hover:opacity-90 active:scale-[0.98]"
-              style={{ background: "var(--terra)", color: "white" }}
-            >
-              LINE オファー管理を開く
-            </a>
-          </div>
+          {/* AUTO OFFER ENGINE */}
+          <OfferEngineWidget />
 
           {/* 気になるサイン — 準備中 */}
           <div className="card p-5 lg:p-6 relative overflow-hidden">
