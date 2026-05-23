@@ -76,16 +76,19 @@ export default async function OffersPreviewPage({
   // テンプレート取得
   const { data: rawTemplates } = await supabase
     .from("message_templates")
-    .select("type, content")
+    .select("template_type, content")
     .eq("salon_id", DEFAULT_SALON_ID)
     .eq("is_default", true)
-    .in("type", ["friendly", "business", "sales"]);
+    .in("template_type", ["friendly", "business", "sales"]);
 
-  const templates: TemplateOption[] = (rawTemplates ?? []).map((t) => ({
-    type: t.type as string,
-    label: TEMPLATE_TYPE_LABELS[t.type as string] ?? t.type,
-    content: t.content as string,
-  }));
+  const TYPE_ORDER = ["friendly", "business", "sales"];
+  const templates: TemplateOption[] = (rawTemplates ?? [])
+    .sort((a, b) => TYPE_ORDER.indexOf(a.template_type) - TYPE_ORDER.indexOf(b.template_type))
+    .map((t) => ({
+      type: t.template_type as string,
+      label: TEMPLATE_TYPE_LABELS[t.template_type as string] ?? t.template_type,
+      content: t.content as string,
+    }));
 
   const { data: customers } = await supabase
     .from("customers")
