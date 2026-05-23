@@ -45,6 +45,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     };
 
     const { selectedCustomerIds, templateType, slotStart, slotEnd } = body;
+    console.log("[send] body received:", { templateType, slotStart, slotEnd, customerCount: Array.isArray(selectedCustomerIds) ? selectedCustomerIds.length : "NOT_ARRAY" });
 
     // ── バリデーション ───────────────────────────────────────
     if (
@@ -90,10 +91,11 @@ export async function POST(request: Request): Promise<NextResponse> {
       .from("message_templates")
       .select("content")
       .eq("salon_id", DEFAULT_SALON_ID)
-      .eq("type", templateType)
+      .eq("template_type", templateType)
       .eq("is_default", true)
       .single();
 
+    console.log("[send] template fetch:", tplError ? `ERR: ${tplError.message}` : "OK");
     if (tplError || !template) {
       return NextResponse.json({ error: "template not found" }, { status: 404 });
     }
@@ -107,6 +109,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       .eq("line_follow_status", "followed")
       .not("line_user_id", "is", null);
 
+    console.log("[send] customer fetch:", custError ? `ERR: ${custError.message}` : `OK count=${customers?.length ?? 0}`);
     if (custError) {
       return NextResponse.json({ error: "failed to fetch customers" }, { status: 500 });
     }
@@ -146,6 +149,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       .select("id")
       .single();
 
+    console.log("[send] offer insert:", offerError ? `ERR: ${offerError.message}` : `OK id=${offer?.id}`);
     if (offerError || !offer) {
       return NextResponse.json({ error: "failed to create offer" }, { status: 500 });
     }
@@ -167,6 +171,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       .insert(recipientRows)
       .select("id, customer_id");
 
+    console.log("[send] recipients insert:", recipError ? `ERR: ${recipError.message}` : `OK count=${recipients?.length ?? 0}`);
     if (recipError || !recipients) {
       return NextResponse.json({ error: "failed to create recipients" }, { status: 500 });
     }
@@ -232,6 +237,7 @@ export async function POST(request: Request): Promise<NextResponse> {
               lineRes = await linePush(customer.line_user_id as string, flexPayload, accessToken);
             }
 
+            console.log("[send] LINE push", customer.name, "->", lineRes.status);
             if (lineRes.ok) {
               await supabase
                 .from("offer_recipients")
