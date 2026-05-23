@@ -7,7 +7,6 @@ import CustomersList, { type CustomerRow } from "./customers-list";
 export interface PendingRow {
   id: string;
   name: string;
-  line_user_id: string;
   line_follow_status: string | null;
   line_followed_at: string | null;
 }
@@ -122,9 +121,6 @@ function PendingList({ pending }: { pending: PendingRow[] }) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-base">本人確認待ち</div>
-              <div className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
-                LINE ID: {p.line_user_id.slice(0, 12)}…
-              </div>
             </div>
             <div className="text-right flex-shrink-0">
               {followedAt && (

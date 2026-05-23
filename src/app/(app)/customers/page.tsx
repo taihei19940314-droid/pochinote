@@ -21,7 +21,7 @@ export default async function CustomersPage({
 
   const { data: customers } = await supabase
     .from("customers")
-    .select("id, name, phone, line_user_id, line_follow_status, line_followed_at, pets(id, name, breed, gender, birth_date, weight_kg, notes, rabies_vaccination_date)")
+    .select("id, name, phone, line_user_id, line_follow_status, line_followed_at, ignored, pets(id, name, breed, gender, birth_date, weight_kg, notes, rabies_vaccination_date)")
     .eq("salon_id", DEFAULT_SALON_ID)
     .order("created_at", { ascending: false });
 
@@ -54,13 +54,18 @@ export default async function CustomersPage({
       lastVisitDate: lastVisitMap[c.id] ?? null,
     }));
 
-  // 未特定 LINE ユーザー
+  // 未特定 LINE ユーザー(pending-matches と同じ条件: followed + ignored=false)
   const pending: PendingRow[] = allCustomers
-    .filter((c) => isUnidentified(c.name) && c.line_user_id)
+    .filter(
+      (c) =>
+        isUnidentified(c.name) &&
+        c.line_user_id &&
+        c.line_follow_status === "followed" &&
+        c.ignored === false
+    )
     .map((c) => ({
       id: c.id,
       name: c.name ?? "(未特定 LINE ユーザー)",
-      line_user_id: c.line_user_id!,
       line_follow_status: c.line_follow_status,
       line_followed_at: c.line_followed_at,
     }));
