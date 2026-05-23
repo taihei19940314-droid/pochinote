@@ -212,7 +212,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
           const bodyText = expandTemplateVariables(template.content as string, {
             petName,
-            salonName: salon.name as string,
+            salonName: (salon.name as string | null) ?? "サロン",
             date: slotJst.date,
             time: slotJst.time,
             daysSinceLastVisit: customer.last_visit_at

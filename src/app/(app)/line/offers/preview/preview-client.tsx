@@ -291,13 +291,13 @@ function ResultModal({
         <div className="font-semibold text-base mb-4">送信完了</div>
 
         <div className="space-y-3 mb-5">
-          <ResultRow label="成功" value={`${result.success}人`} color="var(--sage)" />
+          <ResultRow label="成功" value={`${result.success ?? 0}人`} color="var(--sage)" />
 
-          {result.failed.length > 0 && (
+          {(result.failed ?? []).length > 0 && (
             <div>
               <ResultRow label="失敗" value={`${result.failed.length}人`} color="#c0392b" />
               <ul className="mt-1 space-y-0.5 pl-3">
-                {result.failed.map((f, i) => (
+                {(result.failed ?? []).map((f, i) => (
                   <li key={i} className="text-xs" style={{ color: "var(--ink-soft)" }}>
                     {f.name}：{f.reason}
                   </li>
@@ -306,11 +306,11 @@ function ResultModal({
             </div>
           )}
 
-          {result.skipped.length > 0 && (
+          {(result.skipped ?? []).length > 0 && (
             <div>
               <ResultRow label="スキップ" value={`${result.skipped.length}人（再送禁止期間内）`} color="var(--ink-soft)" />
               <ul className="mt-1 space-y-0.5 pl-3">
-                {result.skipped.map((s, i) => (
+                {(result.skipped ?? []).map((s, i) => (
                   <li key={i} className="text-xs" style={{ color: "var(--ink-soft)" }}>
                     {s.name}（{formatSentAt(s.lastSentAt)}に送信済み）
                   </li>
@@ -319,11 +319,11 @@ function ResultModal({
             </div>
           )}
 
-          {result.blocked.length > 0 && (
+          {(result.blocked ?? []).length > 0 && (
             <div>
               <ResultRow label="ブロック" value={`${result.blocked.length}人`} color="#c0392b" />
               <ul className="mt-1 space-y-0.5 pl-3">
-                {result.blocked.map((b, i) => (
+                {(result.blocked ?? []).map((b, i) => (
                   <li key={i} className="text-xs" style={{ color: "var(--ink-soft)" }}>
                     {b.name}（LINE をブロック中 → 今後対象外に設定しました）
                   </li>
@@ -404,11 +404,35 @@ export function PreviewClient({
           slotEnd: slotRawEnd,
         }),
       });
-      const data = await res.json() as SendResult;
+
+      // JSON パース失敗を考慮してテキストで受け取り、手動でパース
+      const text = await res.text();
+      let data: Record<string, unknown>;
+      try {
+        data = JSON.parse(text) as Record<string, unknown>;
+      } catch {
+        // 非JSON レスポンス(HTML エラーページ等) → 汎用エラー
+        setPhase({ tag: "done", result: { success: 0, failed: [], skipped: [], blocked: [], tokenError: false } });
+        return;
+      }
+
       if (data.tokenError) {
         setPhase({ tag: "token_error" });
+      } else if (!res.ok || data.error) {
+        // API エラーレスポンス({ error: "..." }) → 汎用エラー結果
+        setPhase({ tag: "done", result: { success: 0, failed: [], skipped: [], blocked: [], tokenError: false } });
       } else {
-        setPhase({ tag: "done", result: data });
+        // 正常な SendResult として扱う(防御的にデフォルト値を補完)
+        setPhase({
+          tag: "done",
+          result: {
+            success: (data.success as number) ?? 0,
+            failed: (data.failed as SendResultItem[]) ?? [],
+            skipped: (data.skipped as SendResultItem[]) ?? [],
+            blocked: (data.blocked as SendResultItem[]) ?? [],
+            tokenError: false,
+          },
+        });
       }
     } catch {
       setPhase({ tag: "done", result: { success: 0, failed: [], skipped: [], blocked: [], tokenError: false } });
