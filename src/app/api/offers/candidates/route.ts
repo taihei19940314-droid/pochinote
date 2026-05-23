@@ -59,9 +59,13 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json({ error: "failed to fetch offer history" }, { status: 500 });
     }
 
+    const identifiedCustomers = (customers ?? []).filter(
+      (c) => c.name && !c.name.startsWith("(未特定")
+    );
+
     const candidates = detectInactiveCustomers({
       now,
-      customers: customers ?? [],
+      customers: identifiedCustomers,
       pets: pets ?? [],
       recentOffers: recentOffers ?? [],
       inactiveThresholdDays,

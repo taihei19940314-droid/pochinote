@@ -88,9 +88,13 @@ export default async function OffersPreviewPage({
 
   const allCustomers = customers ?? [];
 
-  // 0件サマリー計算
+  // 0件サマリー計算(未特定 LINE ユーザーを除く)
   const linkedFollowed = allCustomers.filter(
-    (c) => c.line_user_id && c.line_follow_status === "followed"
+    (c) =>
+      c.line_user_id &&
+      c.line_follow_status === "followed" &&
+      c.name &&
+      !c.name.startsWith("(未特定")
   );
   const emptySummary: EmptySummary = {
     totalLinkedCustomers: linkedFollowed.length,
@@ -98,9 +102,13 @@ export default async function OffersPreviewPage({
     inactiveThresholdDays,
   };
 
+  const identifiedCustomers = allCustomers.filter(
+    (c) => c.name && !c.name.startsWith("(未特定")
+  );
+
   const candidates = detectInactiveCustomers({
     now,
-    customers: allCustomers,
+    customers: identifiedCustomers,
     pets: pets ?? [],
     recentOffers: recentOffers ?? [],
     inactiveThresholdDays,

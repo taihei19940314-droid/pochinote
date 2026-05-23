@@ -1,27 +1,30 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
-import CustomersList, { CustomerRow } from "./customers-list";
+import { type CustomerRow } from "./customers-list";
+import { CustomersTabs, type PendingRow } from "./customers-tabs-client";
 
-// TODO: 認証実装後、ログイン中のサロンIDに置き換える
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 
 export const dynamic = "force-dynamic";
 
+function isUnidentified(name: string | null): boolean {
+  return !name || name.startsWith("(未特定");
+}
+
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ registered?: string }>;
+  searchParams: Promise<{ registered?: string; tab?: string }>;
 }) {
   const { registered } = await searchParams;
   const supabase = await createClient();
 
   const { data: customers } = await supabase
     .from("customers")
-    .select("id, name, phone, line_user_id, pets(id, name, breed, gender, birth_date, weight_kg, notes, rabies_vaccination_date)")
+    .select("id, name, phone, line_user_id, line_follow_status, line_followed_at, pets(id, name, breed, gender, birth_date, weight_kg, notes, rabies_vaccination_date)")
     .eq("salon_id", DEFAULT_SALON_ID)
     .order("created_at", { ascending: false });
 
-  // Try to get last booking date per customer (graceful fallback if table doesn't exist)
   let lastVisitMap: Record<string, string> = {};
   try {
     const { data: bookings } = await supabase
@@ -34,17 +37,33 @@ export default async function CustomersPage({
       }
     }
   } catch {
-    // bookings table doesn't exist yet — all customers treated as 未来店
+    // bookings table doesn't exist yet
   }
 
-  const rows: CustomerRow[] = (customers ?? []).map((c) => ({
-    id: c.id,
-    name: c.name,
-    phone: c.phone,
-    line_user_id: c.line_user_id,
-    pets: (c.pets as CustomerRow["pets"]) ?? [],
-    lastVisitDate: lastVisitMap[c.id] ?? null,
-  }));
+  const allCustomers = customers ?? [];
+
+  // 本人特定済み
+  const identified: CustomerRow[] = allCustomers
+    .filter((c) => !isUnidentified(c.name))
+    .map((c) => ({
+      id: c.id,
+      name: c.name!,
+      phone: c.phone,
+      line_user_id: c.line_user_id,
+      pets: (c.pets as CustomerRow["pets"]) ?? [],
+      lastVisitDate: lastVisitMap[c.id] ?? null,
+    }));
+
+  // 未特定 LINE ユーザー
+  const pending: PendingRow[] = allCustomers
+    .filter((c) => isUnidentified(c.name) && c.line_user_id)
+    .map((c) => ({
+      id: c.id,
+      name: c.name ?? "(未特定 LINE ユーザー)",
+      line_user_id: c.line_user_id!,
+      line_follow_status: c.line_follow_status,
+      line_followed_at: c.line_followed_at,
+    }));
 
   return (
     <div className="max-w-3xl mx-auto py-6 lg:py-8 px-0 lg:px-2">
@@ -57,7 +76,16 @@ export default async function CustomersPage({
           </span>
         </Link>
       </div>
-      <CustomersList customers={rows} registered={registered === "1"} />
+
+      {registered === "1" && (
+        <div className="mb-4 px-1 lg:px-0">
+          <div className="px-4 py-3 rounded-lg text-sm font-medium" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>
+            ✓ 顧客を登録しました
+          </div>
+        </div>
+      )}
+
+      <CustomersTabs identified={identified} pending={pending} />
     </div>
   );
 }

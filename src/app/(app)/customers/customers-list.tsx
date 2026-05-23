@@ -38,10 +38,8 @@ function daysSince(dateStr: string | null): number | null {
 
 export default function CustomersList({
   customers,
-  registered,
 }: {
   customers: CustomerRow[];
-  registered?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -74,13 +72,7 @@ export default function CustomersList({
 
   return (
     <div>
-      {registered && (
-        <div className="mb-4 px-4 py-3 rounded-lg text-sm font-medium" style={{ background: "rgba(107,142,127,0.15)", color: "var(--sage)" }}>
-          ✓ 顧客を登録しました
-        </div>
-      )}
-
-      {/* Search + Filter — sticky on mobile */}
+        {/* Search + Filter — sticky on mobile */}
       <div className="sticky top-0 z-10 pb-3 pt-1 lg:static lg:pb-0 lg:pt-0" style={{ background: "var(--paper)" }}>
         <div className="mb-3 px-1 lg:px-0">
           <input
