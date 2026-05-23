@@ -3,7 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { detectInactiveCustomers } from "@/lib/inactive-customers";
 import { getJstDateStr } from "@/lib/availability";
-import { PreviewClient, type SlotInfo, type EmptySummary } from "./preview-client";
+import { PreviewClient, type SlotInfo, type EmptySummary, type TemplateOption } from "./preview-client";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +47,12 @@ function parseSlotInfo(
   };
 }
 
+const TEMPLATE_TYPE_LABELS: Record<string, string> = {
+  friendly: "フレンドリー型",
+  business: "業務的型",
+  sales: "営業的型",
+};
+
 export default async function OffersPreviewPage({
   searchParams,
 }: {
@@ -56,14 +62,30 @@ export default async function OffersPreviewPage({
   const supabase = createAdminClient();
   const now = new Date();
 
+  // サロン情報(名前 + 閾値設定)
   const { data: salon } = await supabase
     .from("salons")
-    .select("inactive_threshold_days, min_resend_interval_days")
+    .select("name, inactive_threshold_days, min_resend_interval_days")
     .eq("id", DEFAULT_SALON_ID)
     .single();
 
   const inactiveThresholdDays = salon?.inactive_threshold_days ?? 60;
   const minResendIntervalDays = salon?.min_resend_interval_days ?? 7;
+  const salonName = (salon?.name as string | null) ?? "トリエル";
+
+  // テンプレート取得
+  const { data: rawTemplates } = await supabase
+    .from("message_templates")
+    .select("type, content")
+    .eq("salon_id", DEFAULT_SALON_ID)
+    .eq("is_default", true)
+    .in("type", ["friendly", "business", "sales"]);
+
+  const templates: TemplateOption[] = (rawTemplates ?? []).map((t) => ({
+    type: t.type as string,
+    label: TEMPLATE_TYPE_LABELS[t.type as string] ?? t.type,
+    content: t.content as string,
+  }));
 
   const { data: customers } = await supabase
     .from("customers")
@@ -88,13 +110,12 @@ export default async function OffersPreviewPage({
 
   const allCustomers = customers ?? [];
 
-  // 0件サマリー計算(未特定 LINE ユーザーを除く)
   const linkedFollowed = allCustomers.filter(
     (c) =>
       c.line_user_id &&
       c.line_follow_status === "followed" &&
       c.name &&
-      !c.name.startsWith("(未特定")
+      !c.name.startsWith("(未特定"),
   );
   const emptySummary: EmptySummary = {
     totalLinkedCustomers: linkedFollowed.length,
@@ -103,7 +124,7 @@ export default async function OffersPreviewPage({
   };
 
   const identifiedCustomers = allCustomers.filter(
-    (c) => c.name && !c.name.startsWith("(未特定")
+    (c) => c.name && !c.name.startsWith("(未特定"),
   );
 
   const candidates = detectInactiveCustomers({
@@ -140,7 +161,11 @@ export default async function OffersPreviewPage({
       <PreviewClient
         candidates={candidates}
         slotInfo={slotInfo}
+        slotRawStart={params.start}
+        slotRawEnd={params.end}
         emptySummary={emptySummary}
+        templates={templates}
+        salonName={salonName}
       />
     </div>
   );

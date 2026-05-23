@@ -1,0 +1,68 @@
+// ================================================================
+// LINE Flex Message ペイロード組み立て — 純粋関数
+// ================================================================
+
+export type FlexMessagePayload = {
+  type: "flex";
+  altText: string;
+  contents: object;
+};
+
+export function buildFlexMessage({
+  bodyText,
+  petName,
+  recipientId,
+}: {
+  bodyText: string;
+  petName: string;
+  recipientId: string;
+}): FlexMessagePayload {
+  return {
+    type: "flex",
+    altText: `${petName}ちゃんへのご連絡です`,
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        paddingAll: "xl",
+        contents: [
+          {
+            type: "text",
+            text: bodyText,
+            wrap: true,
+            size: "sm",
+            color: "#1a1a2e",
+          },
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        paddingAll: "xl",
+        contents: [
+          {
+            type: "button",
+            action: {
+              type: "postback",
+              label: "予約する",
+              data: `action=book&offer_recipient_id=${recipientId}`,
+            },
+            style: "primary",
+            color: "#C97B5F",
+          },
+          {
+            type: "button",
+            action: {
+              type: "postback",
+              label: "今回はパス",
+              data: `action=pass&offer_recipient_id=${recipientId}`,
+            },
+            style: "secondary",
+          },
+        ],
+      },
+    },
+  };
+}

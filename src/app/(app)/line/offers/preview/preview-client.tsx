@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
+import { expandTemplateVariables } from "@/lib/line/expand-template-variables";
 import type { InactiveCustomer } from "@/lib/inactive-customers";
 
+// ─── 型定義 ──────────────────────────────────────────────────
 export type SlotInfo = {
-  dateLabel: string;  // 「今日」「明日」「M/D(曜)」
+  dateLabel: string;
   startHHMM: string;
   endHHMM: string;
   slotCount: number;
@@ -17,13 +20,52 @@ export type EmptySummary = {
   inactiveThresholdDays: number;
 };
 
-// ─── 空き枠カード ───────────────────────────────────────────
+export type TemplateOption = {
+  type: string;
+  label: string;
+  content: string;
+};
+
+type SendResultItem = { name: string; reason?: string; lastSentAt?: string | null };
+type SendResult = {
+  success: number;
+  failed: SendResultItem[];
+  skipped: SendResultItem[];
+  blocked: SendResultItem[];
+  tokenError: boolean;
+};
+
+type Phase =
+  | { tag: "idle" }
+  | { tag: "confirming"; templateType: string }
+  | { tag: "sending" }
+  | { tag: "done"; result: SendResult }
+  | { tag: "token_error" };
+
+const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
+
+// ─── 日付フォーマット ─────────────────────────────────────────
+function formatLastVisit(date: Date): string {
+  const jst = new Date(date.getTime() + 9 * 3600_000);
+  const M = jst.getUTCMonth() + 1;
+  const D = jst.getUTCDate();
+  const w = WEEKDAY_LABELS[jst.getUTCDay()];
+  return `${M}/${D}(${w})`;
+}
+
+function formatSentAt(iso: string | null | undefined): string {
+  if (!iso) return "不明";
+  const jst = new Date(new Date(iso).getTime() + 9 * 3600_000);
+  const M = jst.getUTCMonth() + 1;
+  const D = jst.getUTCDate();
+  const elapsed = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  return `${M}/${D} (${elapsed}日前)`;
+}
+
+// ─── 空き枠カード ─────────────────────────────────────────────
 function SlotInfoCard({ slot }: { slot: SlotInfo }) {
   return (
-    <div
-      className="card p-4 mb-6"
-      style={{ borderLeft: "3px solid var(--terra)" }}
-    >
+    <div className="card p-4 mb-6" style={{ borderLeft: "3px solid var(--terra)" }}>
       <div
         className="text-[10px] tracking-[0.18em] uppercase mb-1 font-semibold"
         style={{ color: "var(--terra)" }}
@@ -31,8 +73,7 @@ function SlotInfoCard({ slot }: { slot: SlotInfo }) {
         対象の空き枠
       </div>
       <div className="font-semibold text-base">
-        {slot.dateLabel}&nbsp;
-        {slot.startHHMM}〜{slot.endHHMM}
+        {slot.dateLabel}&nbsp;{slot.startHHMM}〜{slot.endHHMM}
       </div>
       <div className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
         {slot.slotCount}枠分の空きがあります
@@ -41,7 +82,7 @@ function SlotInfoCard({ slot }: { slot: SlotInfo }) {
   );
 }
 
-// ─── 0件時サマリー ──────────────────────────────────────────
+// ─── 0件サマリー ──────────────────────────────────────────────
 function EmptySummarySection({ summary }: { summary: EmptySummary }) {
   return (
     <div className="card p-8 text-center">
@@ -50,64 +91,334 @@ function EmptySummarySection({ summary }: { summary: EmptySummary }) {
       <p className="text-sm leading-relaxed mb-5" style={{ color: "var(--ink-soft)" }}>
         全員が{summary.inactiveThresholdDays}日以内にご来店されています。
       </p>
-
-      <div
-        className="rounded-xl p-4 text-left space-y-2"
-        style={{ background: "rgba(26,26,46,0.04)" }}
-      >
+      <div className="rounded-xl p-4 text-left space-y-2" style={{ background: "rgba(26,26,46,0.04)" }}>
         <div className="text-xs font-semibold mb-1" style={{ color: "var(--ink-soft)" }}>
           サロンの状況
         </div>
-        <SummaryRow
-          label="LINE 連携済み顧客"
-          value={`${summary.totalLinkedCustomers}人`}
-        />
-        <SummaryRow
-          label={`離脱判定`}
-          value={`最終来店から ${summary.inactiveThresholdDays}日以上経過`}
-        />
-        <SummaryRow
-          label="来店記録のない顧客"
-          value={`${summary.customersWithoutVisitHistory}人（対象外）`}
-        />
+        {[
+          ["LINE 連携済み顧客", `${summary.totalLinkedCustomers}人`],
+          ["離脱判定", `最終来店から ${summary.inactiveThresholdDays}日以上経過`],
+          ["来店記録のない顧客", `${summary.customersWithoutVisitHistory}人（対象外）`],
+        ].map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between text-sm">
+            <span style={{ color: "var(--ink-soft)" }}>{label}</span>
+            <span className="font-medium">{value}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+// ─── 確認モーダル ─────────────────────────────────────────────
+function ConfirmModal({
+  phase,
+  candidates,
+  checkedIds,
+  templates,
+  slotInfo,
+  salonName,
+  onClose,
+  onSend,
+}: {
+  phase: Phase & { tag: "confirming" };
+  candidates: InactiveCustomer[];
+  checkedIds: Set<string>;
+  templates: TemplateOption[];
+  slotInfo?: SlotInfo;
+  salonName: string;
+  onClose: () => void;
+  onSend: (templateType: string) => void;
+}) {
+  const [selectedType, setSelectedType] = useState(phase.templateType);
+
+  const selectedTemplate = templates.find((t) => t.type === selectedType);
+  const selectedCandidates = candidates.filter((c) => checkedIds.has(c.customerId));
+  const sample = selectedCandidates[0];
+
+  const previewText = selectedTemplate && sample
+    ? expandTemplateVariables(selectedTemplate.content, {
+        petName: sample.petName,
+        salonName,
+        date: slotInfo?.dateLabel ?? "近日中",
+        time: slotInfo?.startHHMM ?? "—",
+        daysSinceLastVisit: sample.daysSinceLastVisit,
+      })
+    : selectedTemplate?.content ?? "";
+
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span style={{ color: "var(--ink-soft)" }}>{label}</span>
-      <span className="font-medium">{value}</span>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      {/* backdrop */}
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+
+      {/* sheet */}
+      <div
+        className="relative w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--paper)", maxHeight: "90dvh", overflowY: "auto" }}
+      >
+        <div className="p-5 sm:p-6">
+          {/* ヘッダー */}
+          <div className="mb-5">
+            <div className="font-display text-lg font-semibold mb-1">
+              {selectedCandidates.length}人にオファーを送信します
+            </div>
+            {slotInfo && (
+              <div className="text-sm" style={{ color: "var(--ink-soft)" }}>
+                {slotInfo.dateLabel} {slotInfo.startHHMM}〜{slotInfo.endHHMM}
+              </div>
+            )}
+          </div>
+
+          {/* テンプレート選択 */}
+          {templates.length > 0 && (
+            <div className="mb-4">
+              <div className="text-xs font-semibold mb-2" style={{ color: "var(--ink-soft)" }}>
+                メッセージテンプレート
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {templates.map((t) => (
+                  <button
+                    key={t.type}
+                    onClick={() => setSelectedType(t.type)}
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
+                    style={
+                      selectedType === t.type
+                        ? { background: "var(--terra)", color: "white" }
+                        : { background: "rgba(26,26,46,0.07)", color: "var(--ink-soft)" }
+                    }
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* プレビュー */}
+          {sample && (
+            <div className="mb-5">
+              <div className="text-xs font-semibold mb-2" style={{ color: "var(--ink-soft)" }}>
+                送信プレビュー（{sample.customerName}さん / {sample.petName}）
+              </div>
+              <div
+                className="rounded-xl p-4 text-sm leading-relaxed whitespace-pre-line"
+                style={{
+                  background: "rgba(26,26,46,0.04)",
+                  color: "var(--ink)",
+                  fontFamily: "inherit",
+                  minHeight: 80,
+                }}
+              >
+                {previewText || "—"}
+              </div>
+            </div>
+          )}
+
+          {/* フッターボタン */}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold"
+              style={{ background: "rgba(26,26,46,0.07)", color: "var(--ink-soft)" }}
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={() => onSend(selectedType)}
+              disabled={selectedCandidates.length === 0}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              style={{ background: "var(--terra)", color: "white" }}
+            >
+              本当に送る
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ─── メインクライアント島 ───────────────────────────────────
+// ─── 結果画面モーダル ─────────────────────────────────────────
+function ResultModal({
+  result,
+  onClose,
+}: {
+  result: SendResult;
+  onClose: () => void;
+}) {
+  if (result.tokenError) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="absolute inset-0 bg-black/40" />
+        <div
+          className="relative w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl p-6"
+          style={{ background: "var(--paper)" }}
+        >
+          <div className="text-2xl mb-3">❌</div>
+          <div className="font-semibold text-base mb-2">LINE トークンが無効です</div>
+          <p className="text-sm mb-5" style={{ color: "var(--ink-soft)" }}>
+            設定画面でアクセストークンを再登録してください。
+          </p>
+          <div className="flex gap-3">
+            <a
+              href="/line/settings"
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-center"
+              style={{ background: "var(--terra)", color: "white" }}
+            >
+              設定画面へ
+            </a>
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold"
+              style={{ background: "rgba(26,26,46,0.07)", color: "var(--ink-soft)" }}
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl p-6"
+        style={{ background: "var(--paper)", maxHeight: "90dvh", overflowY: "auto" }}
+      >
+        <div className="text-2xl mb-3">✅</div>
+        <div className="font-semibold text-base mb-4">送信完了</div>
+
+        <div className="space-y-3 mb-5">
+          <ResultRow label="成功" value={`${result.success}人`} color="var(--sage)" />
+
+          {result.failed.length > 0 && (
+            <div>
+              <ResultRow label="失敗" value={`${result.failed.length}人`} color="#c0392b" />
+              <ul className="mt-1 space-y-0.5 pl-3">
+                {result.failed.map((f, i) => (
+                  <li key={i} className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                    {f.name}：{f.reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {result.skipped.length > 0 && (
+            <div>
+              <ResultRow label="スキップ" value={`${result.skipped.length}人（再送禁止期間内）`} color="var(--ink-soft)" />
+              <ul className="mt-1 space-y-0.5 pl-3">
+                {result.skipped.map((s, i) => (
+                  <li key={i} className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                    {s.name}（{formatSentAt(s.lastSentAt)}に送信済み）
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {result.blocked.length > 0 && (
+            <div>
+              <ResultRow label="ブロック" value={`${result.blocked.length}人`} color="#c0392b" />
+              <ul className="mt-1 space-y-0.5 pl-3">
+                {result.blocked.map((b, i) => (
+                  <li key={i} className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                    {b.name}（LINE をブロック中 → 今後対象外に設定しました）
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full py-3 rounded-xl text-sm font-semibold"
+          style={{ background: "var(--terra)", color: "white" }}
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ResultRow({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div className="flex items-baseline justify-between text-sm">
+      <span style={{ color: "var(--ink-soft)" }}>{label}</span>
+      <span className="font-semibold" style={{ color }}>{value}</span>
+    </div>
+  );
+}
+
+// ─── メインクライアント島 ─────────────────────────────────────
 export function PreviewClient({
   candidates,
   slotInfo,
+  slotRawStart,
+  slotRawEnd,
   emptySummary,
+  templates,
+  salonName,
 }: {
   candidates: InactiveCustomer[];
   slotInfo?: SlotInfo;
+  slotRawStart?: string;
+  slotRawEnd?: string;
   emptySummary: EmptySummary;
+  templates: TemplateOption[];
+  salonName: string;
 }) {
+  const router = useRouter();
   const [checked, setChecked] = useState<Set<string>>(
-    () => new Set(candidates.map((c) => c.customerId))
+    () => new Set(candidates.map((c) => c.customerId)),
   );
+  const [phase, setPhase] = useState<Phase>({ tag: "idle" });
 
   function toggle(id: string) {
     setChecked((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  }
+
+  function openModal() {
+    const defaultType = templates[0]?.type ?? "friendly";
+    setPhase({ tag: "confirming", templateType: defaultType });
+  }
+
+  async function handleSend(templateType: string) {
+    setPhase({ tag: "sending" });
+    try {
+      const res = await fetch("/api/offers/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selectedCustomerIds: [...checked],
+          templateType,
+          slotStart: slotRawStart,
+          slotEnd: slotRawEnd,
+        }),
+      });
+      const data = await res.json() as SendResult;
+      if (data.tokenError) {
+        setPhase({ tag: "token_error" });
+      } else {
+        setPhase({ tag: "done", result: data });
+      }
+    } catch {
+      setPhase({ tag: "done", result: { success: 0, failed: [], skipped: [], blocked: [], tokenError: false } });
+    }
+  }
+
+  function handleResultClose() {
+    setPhase({ tag: "idle" });
+    // 候補リストを最新状態に更新
+    router.refresh();
   }
 
   const checkedCount = checked.size;
@@ -139,10 +450,7 @@ export function PreviewClient({
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div
-                    className="text-lg font-bold tabular-nums"
-                    style={{ color: "var(--sage)" }}
-                  >
+                  <div className="text-lg font-bold tabular-nums" style={{ color: "var(--sage)" }}>
                     {c.daysSinceLastVisit}日
                   </div>
                   <div className="text-xs" style={{ color: "var(--ink-soft)" }}>
@@ -152,14 +460,13 @@ export function PreviewClient({
               </div>
             </label>
           ))}
-
           <p className="text-xs text-center mt-1" style={{ color: "var(--ink-soft)" }}>
             {candidates.length}件
           </p>
         </div>
       )}
 
-      {/* sticky フッター — 候補がある場合のみ表示 */}
+      {/* sticky フッター */}
       {candidates.length > 0 && (
         <div
           className="fixed bottom-14 left-0 right-0 z-40 lg:bottom-0 lg:left-64"
@@ -178,31 +485,43 @@ export function PreviewClient({
               <span className="font-bold" style={{ color: "var(--ink)" }}>{checkedCount}人</span>
               を選択中 / {candidates.length}人
             </span>
-            {/* Week 3 で onClick を追加する */}
             <button
-              disabled
-              className="px-5 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
-              style={{
-                background: "rgba(26,26,46,0.1)",
-                color: "rgba(26,26,46,0.35)",
-              }}
+              onClick={openModal}
+              disabled={checkedCount === 0 || phase.tag === "sending"}
+              className="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              style={{ background: "var(--terra)", color: "white" }}
             >
-              送信
+              {phase.tag === "sending" ? "送信中..." : "送信"}
             </button>
           </div>
         </div>
       )}
+
+      {/* 確認モーダル */}
+      {phase.tag === "confirming" && (
+        <ConfirmModal
+          phase={phase}
+          candidates={candidates}
+          checkedIds={checked}
+          templates={templates}
+          slotInfo={slotInfo}
+          salonName={salonName}
+          onClose={() => setPhase({ tag: "idle" })}
+          onSend={handleSend}
+        />
+      )}
+
+      {/* 結果モーダル */}
+      {(phase.tag === "done" || phase.tag === "token_error") && (
+        <ResultModal
+          result={
+            phase.tag === "done"
+              ? phase.result
+              : { success: 0, failed: [], skipped: [], blocked: [], tokenError: true }
+          }
+          onClose={handleResultClose}
+        />
+      )}
     </>
   );
-}
-
-// ─── 日付フォーマット ────────────────────────────────────────
-const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
-
-function formatLastVisit(date: Date): string {
-  const jst = new Date(date.getTime() + 9 * 3600_000);
-  const M = jst.getUTCMonth() + 1;
-  const D = jst.getUTCDate();
-  const w = WEEKDAY_LABELS[jst.getUTCDay()];
-  return `${M}/${D}(${w})`;
 }
