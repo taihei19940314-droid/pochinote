@@ -58,7 +58,7 @@ export function buildFlexMessage({
             action: {
               type: "postback",
               label: "今回はパス",
-              data: `action=pass&offer_recipient_id=${recipientId}`,
+              data: `action=decline&offer_recipient_id=${recipientId}`,
               displayText: "今回はパス",
             },
             style: "secondary",
