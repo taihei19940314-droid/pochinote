@@ -102,8 +102,15 @@ export default async function DashboardPage() {
   const inProgressCount = bookings.filter((b) => b.status === "in_progress").length;
   const confirmedCount = bookings.filter((b) => b.status === "confirmed").length;
 
-  // LINE 連携待ち件数
+  // 予約希望件数(response_type='booked' かつ未承認)
   const adminSupabase = createAdminClient();
+  const { count: bookingRequestCount } = await adminSupabase
+    .from("offer_recipients")
+    .select("id", { count: "exact", head: true })
+    .eq("salon_id", DEFAULT_SALON_ID)
+    .eq("status", "booked");
+
+  // LINE 連携待ち件数
   const { count: pendingMatchCount } = await adminSupabase
     .from("customers")
     .select("id", { count: "exact", head: true })
@@ -137,6 +144,12 @@ export default async function DashboardPage() {
               : <span className="whitespace-nowrap">今日の予約はまだありません。</span>
             }
           </h1>
+          {(bookingRequestCount ?? 0) > 0 && (
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold"
+              style={{ background: "rgba(217,119,87,0.12)", color: "var(--terra)" }}>
+              📩 予約希望 {bookingRequestCount}件
+            </div>
+          )}
           {firstTime && lastTime && (
             <p className="text-sm mt-3" style={{ color: "var(--ink-soft)" }}>
               {firstTime}〜{lastTime} のスケジュール。
@@ -336,7 +349,7 @@ export default async function DashboardPage() {
           )}
 
           {/* AUTO OFFER ENGINE */}
-          <OfferEngineWidget />
+          <OfferEngineWidget bookingRequestCount={bookingRequestCount ?? 0} />
 
           {/* 気になるサイン — 準備中 */}
           <div className="card p-5 lg:p-6 relative overflow-hidden">

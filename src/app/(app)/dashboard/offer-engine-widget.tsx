@@ -75,7 +75,7 @@ function SlotCard({ slot }: { slot: AvailableSlot }) {
   );
 }
 
-export function OfferEngineWidget() {
+export function OfferEngineWidget({ bookingRequestCount = 0 }: { bookingRequestCount?: number }) {
   const [state, setState] = useState<DetectState>({ status: "idle" });
 
   async function detect() {
@@ -110,6 +110,24 @@ export function OfferEngineWidget() {
           </h2>
         </div>
       </div>
+
+      {/* 予約希望バナー */}
+      {bookingRequestCount > 0 && (
+        <div
+          className="mb-4 px-3 py-2.5 rounded-lg flex items-center justify-between gap-2"
+          style={{ background: "rgba(217,119,87,0.18)" }}
+        >
+          <span className="text-xs font-semibold" style={{ color: "var(--terra)" }}>
+            📩 予約希望が {bookingRequestCount}件 届いています
+          </span>
+          <span
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: "rgba(217,119,87,0.2)", color: "rgba(250,247,242,0.5)" }}
+          >
+            準備中
+          </span>
+        </div>
+      )}
 
       {/* 説明文 */}
       <div className="text-xs mb-4 leading-relaxed" style={{ opacity: 0.55 }}>

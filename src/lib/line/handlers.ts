@@ -4,7 +4,49 @@ import type {
   LineFollowEvent,
   LineUnfollowEvent,
   LineMessageEvent,
+  LinePostbackEvent,
 } from "./types";
+
+const LINE_REPLY_URL = "https://api.line.me/v2/bot/message/reply";
+
+async function lineReply(
+  replyToken: string,
+  text: string,
+  accessToken: string,
+): Promise<void> {
+  const res = await fetch(LINE_REPLY_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      replyToken,
+      messages: [{ type: "text", text }],
+    }),
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!res.ok) {
+    console.error("[postback] LINE Reply API failed:", res.status);
+  }
+}
+
+function buildReplyText(action: string, templateTypeUsed: string | null): string {
+  if (action === "decline") {
+    return "ご連絡ありがとうございます🐶\nまたのご利用、お待ちしております。";
+  }
+  // action === "book"
+  switch (templateTypeUsed) {
+    case "friendly":
+      return "🐶 ご希望ありがとうございます!\nサロンから改めてご連絡させていただきますね。\n少々お待ちください😊";
+    case "business":
+      return "ご希望を承りました。\nサロンより確認のご連絡を差し上げます。\n今しばらくお待ちください。";
+    case "sales":
+      return "🌸 ありがとうございます!\nサロンから折り返しご連絡いたします✨";
+    default:
+      return "ご希望を承りました。\nサロンより確認のご連絡を差し上げます。";
+  }
+}
 
 const PENDING_NAME = "(未特定 LINE ユーザー)";
 
@@ -67,6 +109,95 @@ export async function handleBlockEvent(
     .update({ line_follow_status: "blocked" })
     .eq("salon_id", salonId)
     .eq("line_user_id", lineUserId);
+}
+
+export async function handlePostbackEvent(
+  event: LinePostbackEvent,
+  salonId: string,
+): Promise<void> {
+  const data = new URLSearchParams(event.postback.data);
+  const recipientId = data.get("offer_recipient_id");
+  const action = data.get("action");
+
+  console.log("[postback] salonId:", salonId, "recipientId:", recipientId, "action:", action);
+
+  if (!recipientId || !["book", "decline"].includes(action ?? "")) {
+    console.warn("[postback] invalid data, ignoring:", event.postback.data);
+    return;
+  }
+
+  const supabase = createAdminClient();
+
+  // recipient レコード取得
+  const { data: recipient, error: fetchErr } = await supabase
+    .from("offer_recipients")
+    .select("id, offer_id, customer_id, status, template_type_used")
+    .eq("id", recipientId)
+    .eq("salon_id", salonId)
+    .maybeSingle();
+
+  if (fetchErr || !recipient) {
+    console.warn("[postback] recipient not found:", recipientId);
+    return;
+  }
+  if (!recipient.customer_id) {
+    console.warn("[postback] customer_id is null, skipping:", recipientId);
+    return;
+  }
+
+  // 冪等性: 既に booked / declined なら無視
+  if (recipient.status === "booked" || recipient.status === "declined") {
+    console.log("[postback] already processed, ignoring duplicate:", recipientId, recipient.status);
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  if (action === "book") {
+    await supabase
+      .from("offer_recipients")
+      .update({ status: "booked", booked_at: now })
+      .eq("id", recipientId);
+
+    // 同一 offer で先に booked になっている他レコードを確認
+    const { data: competitors } = await supabase
+      .from("offer_recipients")
+      .select("id")
+      .eq("offer_id", recipient.offer_id)
+      .eq("status", "booked")
+      .neq("id", recipientId);
+
+    if ((competitors ?? []).length > 0) {
+      await supabase
+        .from("offer_recipients")
+        .update({ is_competing: true })
+        .eq("id", recipientId);
+      console.log("[postback] is_competing=true for:", recipientId);
+    }
+  } else {
+    // action === "decline"
+    await supabase
+      .from("offer_recipients")
+      .update({ status: "declined", declined_at: now })
+      .eq("id", recipientId);
+  }
+
+  // アクセストークン取得 → LINE Reply API
+  const { data: salon } = await supabase
+    .from("salons")
+    .select("line_access_token")
+    .eq("id", salonId)
+    .single();
+
+  const accessToken = salon?.line_access_token as string | null;
+  if (!accessToken) {
+    console.error("[postback] line_access_token not configured, skip reply");
+    return;
+  }
+
+  const replyText = buildReplyText(action!, recipient.template_type_used as string | null);
+  await lineReply(event.replyToken, replyText, accessToken);
+  console.log("[postback] replied ok, action:", action, "recipientId:", recipientId);
 }
 
 export async function handleMessageEvent(

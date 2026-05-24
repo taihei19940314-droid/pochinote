@@ -161,6 +161,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       offer_id: offer.id,
       customer_id: c.id,
       status: "pending",
+      template_type_used: templateType as string,
       days_since_last_visit: c.last_visit_at
         ? Math.floor((now.getTime() - new Date(c.last_visit_at).getTime()) / 86_400_000)
         : null,
