@@ -18,7 +18,7 @@ export async function GET(): Promise<NextResponse> {
   const { data, error } = await supabase
     .from("salons")
     .select(
-      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled, business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes, min_lead_time_minutes, notification_line_user_id"
+      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled, business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes, min_lead_time_minutes"
     )
     .eq("id", DEFAULT_SALON_ID)
     .single();
@@ -46,9 +46,6 @@ export async function GET(): Promise<NextResponse> {
       default_slot_minutes: data.default_slot_minutes ?? 90,
       min_lead_time_minutes: data.min_lead_time_minutes ?? 120,
     },
-    notification: {
-      line_user_id: data.notification_line_user_id ?? null,
-    },
   });
 }
 
@@ -61,7 +58,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     inactive_threshold_days?: number;
     min_resend_interval_days?: number;
     auto_offer_enabled?: boolean;
-    clear_notification?: boolean;
   };
 
   const updates: Record<string, unknown> = {};
@@ -88,9 +84,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (body.auto_offer_enabled !== undefined) {
     updates.auto_offer_enabled = body.auto_offer_enabled;
   }
-  if (body.clear_notification) {
-    updates.notification_line_user_id = null;
-  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "no fields to update" }, { status: 400 });
@@ -102,7 +95,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .update(updates)
     .eq("id", DEFAULT_SALON_ID)
     .select(
-      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled, business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes, min_lead_time_minutes, notification_line_user_id"
+      "line_channel_id, line_channel_secret, line_access_token, line_add_friend_url, inactive_threshold_days, min_resend_interval_days, auto_offer_enabled, business_hours_start, business_hours_end, closed_weekdays, default_slot_minutes, min_lead_time_minutes"
     )
     .single();
 
@@ -128,9 +121,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       closed_weekdays: data.closed_weekdays ?? [],
       default_slot_minutes: data.default_slot_minutes ?? 90,
       min_lead_time_minutes: data.min_lead_time_minutes ?? 120,
-    },
-    notification: {
-      line_user_id: data.notification_line_user_id ?? null,
     },
   });
 }

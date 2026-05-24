@@ -9,7 +9,6 @@ export type LineEvent =
   | LineFollowEvent
   | LineUnfollowEvent
   | LineMessageEvent
-  | LinePostbackEvent
   | LineUnsupportedEvent;
 
 export interface LineSource {
@@ -62,16 +61,6 @@ export interface LineMessageEvent {
   replyToken: string;
   mode: "active" | "standby";
   message: LineMessage;
-}
-
-export interface LinePostbackEvent {
-  type: "postback";
-  webhookEventId: string;
-  source: LineSource;
-  timestamp: number;
-  replyToken: string;
-  mode: "active" | "standby";
-  postback: { data: string; params?: Record<string, string> };
 }
 
 export interface LineUnsupportedEvent {

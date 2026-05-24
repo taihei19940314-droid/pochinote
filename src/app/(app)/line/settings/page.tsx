@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ChevronLeft, Copy, Check, X } from "lucide-react";
+import { ChevronLeft, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { QRCodeSVG } from "qrcode.react";
 
 const WEBHOOK_URL = "https://triel-app.vercel.app/api/line/webhook";
 
@@ -29,9 +28,6 @@ interface SettingsData {
     closed_weekdays: number[];
     default_slot_minutes: number;
     min_lead_time_minutes: number;
-  };
-  notification: {
-    line_user_id: string | null;
   };
 }
 
@@ -85,9 +81,6 @@ export default function LineSettingsPage() {
   const [bizError, setBizError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [notificationUserId, setNotificationUserId] = useState<string | null>(null);
-  const [showQrModal, setShowQrModal] = useState(false);
-  const [clearingNotif, setClearingNotif] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -112,7 +105,6 @@ export default function LineSettingsPage() {
         default_slot_minutes: data.businessSettings.default_slot_minutes,
         min_lead_time_minutes: data.businessSettings.min_lead_time_minutes,
       });
-      setNotificationUserId(data.notification?.line_user_id ?? null);
     } finally {
       setLoading(false);
     }
@@ -195,23 +187,6 @@ export default function LineSettingsPage() {
           : [...prev.closed_weekdays, value].sort((a, b) => a - b),
       };
     });
-  }
-
-  async function clearNotification() {
-    setClearingNotif(true);
-    try {
-      const res = await fetch("/api/line/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clear_notification: true }),
-      });
-      if (!res.ok) throw new Error();
-      setNotificationUserId(null);
-    } catch {
-      // ignore — show no feedback since it's a minor action
-    } finally {
-      setClearingNotif(false);
-    }
   }
 
   async function copyWebhookUrl() {
@@ -401,8 +376,6 @@ export default function LineSettingsPage() {
           <SaveBanner status={autoStatus} />
         </div>
       </div>
-
-      {/* セクション2.5: サロンへの通知設定 — Message アクション切替により非表示 (Day 18 で再評価) */}
 
       {/* セクション3: 営業設定 */}
       <div className="card p-5 mb-4">

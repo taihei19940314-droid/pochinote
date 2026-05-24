@@ -5,9 +5,8 @@ import {
   handleFollowEvent,
   handleUnfollowEvent,
   handleMessageEvent,
-  handlePostbackEvent,
 } from "@/lib/line/handlers";
-import type { LineWebhookBody, LineFollowEvent, LineUnfollowEvent, LineMessageEvent, LinePostbackEvent } from "@/lib/line/types";
+import type { LineWebhookBody, LineFollowEvent, LineUnfollowEvent, LineMessageEvent } from "@/lib/line/types";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -31,9 +30,6 @@ async function processEvent(event: { type: string }, salonId: string): Promise<v
       break;
     case "message":
       await handleMessageEvent(event as LineMessageEvent, salonId);
-      break;
-    case "postback":
-      await handlePostbackEvent(event as LinePostbackEvent, salonId);
       break;
     default:
       break;
