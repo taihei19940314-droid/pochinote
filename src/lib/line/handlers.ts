@@ -8,6 +8,29 @@ import type {
 } from "./types";
 
 const LINE_REPLY_URL = "https://api.line.me/v2/bot/message/reply";
+const LINE_PUSH_URL = "https://api.line.me/v2/bot/message/push";
+
+async function linePushText(
+  toUserId: string,
+  text: string,
+  accessToken: string,
+): Promise<void> {
+  const res = await fetch(LINE_PUSH_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      to: toUserId,
+      messages: [{ type: "text", text }],
+    }),
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!res.ok) {
+    console.error("[notify-salon] Push API failed:", res.status);
+  }
+}
 
 async function lineReply(
   replyToken: string,
@@ -182,10 +205,10 @@ export async function handlePostbackEvent(
       .eq("id", recipientId);
   }
 
-  // アクセストークン取得 → LINE Reply API
+  // アクセストークン + 通知先 LINE user ID 取得
   const { data: salon } = await supabase
     .from("salons")
-    .select("line_access_token")
+    .select("line_access_token, notification_line_user_id")
     .eq("id", salonId)
     .single();
 
@@ -195,9 +218,53 @@ export async function handlePostbackEvent(
     return;
   }
 
+  // 自動返信(Reply API)
   const replyText = buildReplyText(action!, recipient.template_type_used as string | null);
   await lineReply(event.replyToken, replyText, accessToken);
   console.log("[postback] replied ok, action:", action, "recipientId:", recipientId);
+
+  // book 時のみサロンへ Push 通知
+  if (action === "book") {
+    const notifyUserId = salon?.notification_line_user_id as string | null;
+    if (!notifyUserId) {
+      console.log("[notify-salon] no notification user registered, skip");
+    } else {
+      // customer + pet 情報取得
+      const { data: customerData } = await supabase
+        .from("customers")
+        .select("name, last_visit_at, pets(name, breed)")
+        .eq("id", recipient.customer_id)
+        .single();
+
+      const now2 = new Date();
+      const daysSince = customerData?.last_visit_at
+        ? Math.floor((now2.getTime() - new Date(customerData.last_visit_at as string).getTime()) / 86_400_000)
+        : null;
+      const pets = customerData?.pets as Array<{ name: string; breed: string | null }> | null;
+      const pet = pets?.[0];
+      const isCompeting = (await supabase
+        .from("offer_recipients")
+        .select("is_competing")
+        .eq("id", recipientId)
+        .single()).data?.is_competing as boolean | null;
+
+      const lines = [
+        "📩 予約希望が届きました",
+        "",
+        `お客様：${(customerData?.name as string | null) ?? "不明"}さん`,
+        `ペット：${pet?.name ?? "不明"}ちゃん${pet?.breed ? `（${pet.breed}）` : ""}`,
+        daysSince != null ? `最終来店：${daysSince}日前` : null,
+        "応答：予約する",
+        isCompeting ? "⚠️ 同じ枠に他にも応募中" : null,
+        "",
+        "▼ 管理画面で確認",
+        "https://triel-app.vercel.app/dashboard",
+      ].filter((l) => l !== null).join("\n");
+
+      await linePushText(notifyUserId, lines, accessToken);
+      console.log("[notify-salon] push sent to:", notifyUserId);
+    }
+  }
 }
 
 export async function handleMessageEvent(
@@ -206,6 +273,38 @@ export async function handleMessageEvent(
 ): Promise<void> {
   const lineUserId = event.source.userId;
   const supabase = createAdminClient();
+
+  // 「管理者登録」キーワード検知(他の処理より先に判定)
+  if (event.message.type === "text" && "text" in event.message) {
+    const trimmed = event.message.text.trim();
+    if (trimmed === "管理者登録") {
+      console.log("[admin-reg] received from:", lineUserId);
+      const { data: salon } = await supabase
+        .from("salons")
+        .select("line_access_token, notification_line_user_id")
+        .eq("id", salonId)
+        .single();
+      const accessToken = salon?.line_access_token as string | null;
+      if (!accessToken) return;
+
+      const alreadySame = (salon?.notification_line_user_id as string | null) === lineUserId;
+      if (alreadySame) {
+        await lineReply(event.replyToken, "既に管理者として登録済みです。", accessToken);
+      } else {
+        await supabase
+          .from("salons")
+          .update({ notification_line_user_id: lineUserId, notification_registration_pending: false })
+          .eq("id", salonId);
+        await lineReply(
+          event.replyToken,
+          "✅ 管理者として登録しました。今後、お客様の予約希望はこちらに通知されます。",
+          accessToken,
+        );
+        console.log("[admin-reg] registered:", lineUserId, "for salon:", salonId);
+      }
+      return; // 通常メッセージ処理はスキップ
+    }
+  }
 
   // 既存顧客を line_user_id で検索
   const { data: customer } = await supabase

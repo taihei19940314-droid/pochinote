@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ChevronLeft, Copy, Check } from "lucide-react";
+import { ChevronLeft, Copy, Check, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { QRCodeSVG } from "qrcode.react";
 
 const WEBHOOK_URL = "https://triel-app.vercel.app/api/line/webhook";
 
@@ -28,6 +29,9 @@ interface SettingsData {
     closed_weekdays: number[];
     default_slot_minutes: number;
     min_lead_time_minutes: number;
+  };
+  notification: {
+    line_user_id: string | null;
   };
 }
 
@@ -81,6 +85,9 @@ export default function LineSettingsPage() {
   const [bizError, setBizError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [notificationUserId, setNotificationUserId] = useState<string | null>(null);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [clearingNotif, setClearingNotif] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -105,6 +112,7 @@ export default function LineSettingsPage() {
         default_slot_minutes: data.businessSettings.default_slot_minutes,
         min_lead_time_minutes: data.businessSettings.min_lead_time_minutes,
       });
+      setNotificationUserId(data.notification?.line_user_id ?? null);
     } finally {
       setLoading(false);
     }
@@ -187,6 +195,23 @@ export default function LineSettingsPage() {
           : [...prev.closed_weekdays, value].sort((a, b) => a - b),
       };
     });
+  }
+
+  async function clearNotification() {
+    setClearingNotif(true);
+    try {
+      const res = await fetch("/api/line/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clear_notification: true }),
+      });
+      if (!res.ok) throw new Error();
+      setNotificationUserId(null);
+    } catch {
+      // ignore — show no feedback since it's a minor action
+    } finally {
+      setClearingNotif(false);
+    }
   }
 
   async function copyWebhookUrl() {
@@ -376,6 +401,107 @@ export default function LineSettingsPage() {
           <SaveBanner status={autoStatus} />
         </div>
       </div>
+
+      {/* セクション2.5: サロンへの通知設定 */}
+      <div className="card p-5 mb-4">
+        <h2 className="font-semibold mb-1">サロンへの通知設定</h2>
+        <p className="text-xs mb-4" style={{ color: "var(--ink-soft)" }}>
+          予約希望が届いた瞬間、サロンの LINE に通知を送ります。
+        </p>
+
+        {notificationUserId ? (
+          <div className="space-y-3">
+            <div
+              className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm"
+              style={{ background: "rgba(107,142,127,0.12)", color: "var(--sage)" }}
+            >
+              <span className="font-semibold">✅ 設定済み</span>
+              <span className="font-mono text-xs" style={{ color: "var(--ink-soft)" }}>
+                LINE ID: ...{notificationUserId.slice(-4)}
+              </span>
+            </div>
+            <Button
+              onClick={clearNotification}
+              disabled={clearingNotif}
+              variant="outline"
+              className="w-full h-10 text-sm"
+              style={{ color: "var(--ink-soft)" }}
+            >
+              {clearingNotif ? "解除中..." : "設定を解除する"}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div
+              className="px-3 py-2.5 rounded-lg text-xs"
+              style={{ background: "rgba(26,26,46,0.04)", color: "var(--ink-soft)" }}
+            >
+              未設定です。ボタンをタップして設定してください。
+            </div>
+            <Button
+              onClick={() => setShowQrModal(true)}
+              className="w-full h-11 font-semibold"
+              style={{ background: "var(--terra)", color: "white" }}
+            >
+              通知先を設定する
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* QR モーダル */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pb-14 sm:pb-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowQrModal(false)} />
+          <div
+            className="relative w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-2xl p-6"
+            style={{ background: "var(--paper)" }}
+          >
+            <button
+              onClick={() => setShowQrModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full"
+              style={{ background: "rgba(26,26,46,0.07)" }}
+            >
+              <X size={16} style={{ color: "var(--ink-soft)" }} />
+            </button>
+
+            <h3 className="font-semibold text-base mb-1">通知先を設定する</h3>
+            <p className="text-xs mb-4" style={{ color: "var(--ink-soft)" }}>
+              オーナーの個人 LINE でこの QR コードを読み取り、
+              サロンの公式アカウントを友だち追加してください。
+            </p>
+
+            <div className="flex justify-center mb-4">
+              {credentials.line_add_friend_url ? (
+                <QRCodeSVG
+                  value={credentials.line_add_friend_url}
+                  size={180}
+                  level="M"
+                />
+              ) : (
+                <div
+                  className="w-[180px] h-[180px] rounded-lg flex items-center justify-center text-xs text-center p-4"
+                  style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}
+                >
+                  友だち追加 URL が未設定です。
+                  上の「LINE 接続情報」セクションで設定してください。
+                </div>
+              )}
+            </div>
+
+            <div
+              className="rounded-xl px-4 py-3 text-sm leading-relaxed"
+              style={{ background: "rgba(217,119,87,0.08)", borderLeft: "3px solid var(--terra)" }}
+            >
+              友だち追加後、LINE のトークで<br />
+              <span className="font-bold">「管理者登録」</span>と送信してください。<br />
+              <span className="text-xs mt-1 block" style={{ color: "var(--ink-soft)" }}>
+                返信が届いたら設定完了です。ページをリロードして確認できます。
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* セクション3: 営業設定 */}
       <div className="card p-5 mb-4">
