@@ -304,6 +304,83 @@ export async function handleMessageEvent(
       }
       return; // 通常メッセージ処理はスキップ
     }
+
+    // 「予約する」「今回はパス」キーワード判定
+    if (trimmed === "予約する" || trimmed === "今回はパス") {
+      const action = trimmed === "予約する" ? "book" : "decline";
+      console.log("[msg-action] received:", trimmed, "from:", lineUserId);
+
+      // 送信元 customer を逆引き
+      const { data: msgCustomer } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("salon_id", salonId)
+        .eq("line_user_id", lineUserId)
+        .maybeSingle();
+
+      if (!msgCustomer) {
+        console.log("[msg-action] customer not found, ignoring:", lineUserId);
+        return;
+      }
+
+      // 直近の sent な offer_recipient を取得
+      const { data: msgRecipient } = await supabase
+        .from("offer_recipients")
+        .select("id, offer_id, status, template_type_used")
+        .eq("salon_id", salonId)
+        .eq("customer_id", msgCustomer.id)
+        .eq("status", "sent")
+        .order("sent_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!msgRecipient) {
+        console.log("[msg-action] no sent recipient for customer:", msgCustomer.id);
+        return;
+      }
+
+      const nowIso = new Date().toISOString();
+      if (action === "book") {
+        await supabase
+          .from("offer_recipients")
+          .update({ status: "booked", booked_at: nowIso })
+          .eq("id", msgRecipient.id);
+
+        const { data: competitors } = await supabase
+          .from("offer_recipients")
+          .select("id")
+          .eq("offer_id", msgRecipient.offer_id)
+          .eq("status", "booked")
+          .neq("id", msgRecipient.id);
+
+        if ((competitors ?? []).length > 0) {
+          await supabase
+            .from("offer_recipients")
+            .update({ is_competing: true })
+            .eq("id", msgRecipient.id);
+          console.log("[msg-action] is_competing=true for:", msgRecipient.id);
+        }
+      } else {
+        await supabase
+          .from("offer_recipients")
+          .update({ status: "declined", declined_at: nowIso })
+          .eq("id", msgRecipient.id);
+      }
+
+      // アクセストークン取得 → Reply API で自動返信
+      const { data: msgSalon } = await supabase
+        .from("salons")
+        .select("line_access_token")
+        .eq("id", salonId)
+        .single();
+      const msgToken = msgSalon?.line_access_token as string | null;
+      if (msgToken) {
+        const replyText = buildReplyText(action, msgRecipient.template_type_used as string | null);
+        await lineReply(event.replyToken, replyText, msgToken);
+      }
+      console.log("[msg-action] done, action:", action, "recipientId:", msgRecipient.id);
+      return; // 本人特定フローに流さない
+    }
   }
 
   // 既存顧客を line_user_id で検索

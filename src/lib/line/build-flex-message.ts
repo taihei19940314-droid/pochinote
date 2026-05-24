@@ -45,10 +45,9 @@ export function buildFlexMessage({
           {
             type: "button",
             action: {
-              type: "postback",
+              type: "message",
               label: "予約する",
-              data: `action=book&offer_recipient_id=${recipientId}`,
-              displayText: "予約する",
+              text: "予約する",
             },
             style: "primary",
             color: "#C97B5F",
@@ -56,10 +55,9 @@ export function buildFlexMessage({
           {
             type: "button",
             action: {
-              type: "postback",
+              type: "message",
               label: "今回はパス",
-              data: `action=decline&offer_recipient_id=${recipientId}`,
-              displayText: "今回はパス",
+              text: "今回はパス",
             },
             style: "secondary",
           },
