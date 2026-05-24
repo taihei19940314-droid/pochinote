@@ -147,7 +147,7 @@ function ConfirmModal({
     : selectedTemplate?.content ?? "";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pb-14 sm:pb-4">
       {/* backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
