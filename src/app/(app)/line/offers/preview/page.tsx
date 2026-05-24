@@ -62,16 +62,22 @@ export default async function OffersPreviewPage({
   const supabase = createAdminClient();
   const now = new Date();
 
-  // サロン情報(名前 + 閾値設定)
+  // サロン情報(名前 + 閾値設定 + 営業設定)
   const { data: salon } = await supabase
     .from("salons")
-    .select("name, inactive_threshold_days, min_resend_interval_days")
+    .select("name, inactive_threshold_days, min_resend_interval_days, business_hours_start, business_hours_end, default_slot_minutes, min_lead_time_minutes")
     .eq("id", DEFAULT_SALON_ID)
     .single();
 
   const inactiveThresholdDays = salon?.inactive_threshold_days ?? 60;
   const minResendIntervalDays = salon?.min_resend_interval_days ?? 7;
   const salonName = (salon?.name as string | null) ?? "トリエル";
+  const businessSettings = {
+    hoursStart: ((salon?.business_hours_start as string | null) ?? "09:00").slice(0, 5),
+    hoursEnd: ((salon?.business_hours_end as string | null) ?? "18:00").slice(0, 5),
+    slotMinutes: (salon?.default_slot_minutes as number | null) ?? 90,
+    minLeadTimeMinutes: (salon?.min_lead_time_minutes as number | null) ?? 120,
+  };
 
   // テンプレート取得
   const { data: rawTemplates } = await supabase
@@ -169,6 +175,8 @@ export default async function OffersPreviewPage({
         emptySummary={emptySummary}
         templates={templates}
         salonName={salonName}
+        businessSettings={businessSettings}
+        nowIso={now.toISOString()}
       />
     </div>
   );

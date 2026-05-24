@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 import { expandTemplateVariables } from "@/lib/line/expand-template-variables";
+import { calculateSlotCount } from "@/lib/availability-client";
 import type { InactiveCustomer } from "@/lib/inactive-customers";
 
 // ─── 型定義 ──────────────────────────────────────────────────
@@ -12,6 +13,13 @@ export type SlotInfo = {
   startHHMM: string;
   endHHMM: string;
   slotCount: number;
+};
+
+export type BusinessSettings = {
+  hoursStart: string;
+  hoursEnd: string;
+  slotMinutes: number;
+  minLeadTimeMinutes: number;
 };
 
 export type EmptySummary = {
@@ -62,22 +70,130 @@ function formatSentAt(iso: string | null | undefined): string {
   return `${M}/${D} (${elapsed}日前)`;
 }
 
-// ─── 空き枠カード ─────────────────────────────────────────────
-function SlotInfoCard({ slot }: { slot: SlotInfo }) {
+// ─── 時刻を "HH:MM" → その日の JST ISO 文字列(UTC)に変換 ───
+function hhmToIso(hhMM: string, dateIso: string): string {
+  const [h, m] = hhMM.split(":").map(Number);
+  const base = new Date(dateIso);
+  // slotRawStart は JST 午前0時を UTC 変換した ISO → 日付部分を使う
+  const jstBase = new Date(base.getTime() + 9 * 3600_000);
+  const jstDate = jstBase.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  // JST HH:MM → UTC
+  const jstMs = new Date(`${jstDate}T${hhMM}:00+09:00`).getTime();
+  return new Date(jstMs).toISOString();
+}
+
+// ─── バリデーション ────────────────────────────────────────────
+type ValidationError =
+  | { type: "order"; message: string }
+  | { type: "hours"; message: string }
+  | { type: "lead"; message: string };
+
+function validate(
+  start: string,
+  end: string,
+  bs: BusinessSettings,
+  nowIso: string,
+): ValidationError | null {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  const startMin = sh * 60 + sm;
+  const endMin = eh * 60 + em;
+
+  if (startMin >= endMin) {
+    return { type: "order", message: "終了時刻は開始時刻より後にしてください" };
+  }
+
+  const [bsh, bsm] = bs.hoursStart.split(":").map(Number);
+  const [beh, bem] = bs.hoursEnd.split(":").map(Number);
+  if (startMin < bsh * 60 + bsm || endMin > beh * 60 + bem) {
+    return {
+      type: "hours",
+      message: `営業時間外です（営業: ${bs.hoursStart}〜${bs.hoursEnd}）`,
+    };
+  }
+
+  // リードタイム: 現在 JST の HH:MM との比較
+  const nowJst = new Date(new Date(nowIso).getTime() + 9 * 3600_000);
+  const nowMin = nowJst.getUTCHours() * 60 + nowJst.getUTCMinutes();
+  const minStart = nowMin + bs.minLeadTimeMinutes;
+  if (startMin < minStart) {
+    return {
+      type: "lead",
+      message: `リードタイム（${bs.minLeadTimeMinutes}分）後以降を指定してください`,
+    };
+  }
+
+  return null;
+}
+
+// ─── 空き枠編集カード ──────────────────────────────────────────
+function SlotEditor({
+  dateLabel,
+  start,
+  end,
+  onStartChange,
+  onEndChange,
+  bs,
+  nowIso,
+}: {
+  dateLabel: string;
+  start: string;
+  end: string;
+  onStartChange: (v: string) => void;
+  onEndChange: (v: string) => void;
+  bs: BusinessSettings;
+  nowIso: string;
+}) {
+  const slotCount = calculateSlotCount(start, end, bs.slotMinutes);
+  const error = validate(start, end, bs, nowIso);
+
   return (
     <div className="card p-4 mb-6" style={{ borderLeft: "3px solid var(--terra)" }}>
       <div
-        className="text-[10px] tracking-[0.18em] uppercase mb-1 font-semibold"
+        className="text-[10px] tracking-[0.18em] uppercase mb-2 font-semibold"
         style={{ color: "var(--terra)" }}
       >
         対象の空き枠
       </div>
-      <div className="font-semibold text-base">
-        {slot.dateLabel}&nbsp;{slot.startHHMM}〜{slot.endHHMM}
+      <div className="text-sm font-semibold mb-2" style={{ color: "var(--ink-soft)" }}>
+        {dateLabel}
       </div>
-      <div className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
-        {slot.slotCount}枠分の空きがあります
+      <div className="flex items-center gap-2 mb-2">
+        <input
+          type="time"
+          step={900}
+          value={start}
+          onChange={(e) => onStartChange(e.target.value)}
+          className="h-10 rounded-lg border px-2 text-sm font-semibold w-[120px]"
+          style={{
+            borderColor: error ? "#c0392b" : "rgba(26,26,46,0.18)",
+            background: "var(--paper)",
+            color: "var(--ink)",
+          }}
+        />
+        <span className="text-sm" style={{ color: "var(--ink-soft)" }}>〜</span>
+        <input
+          type="time"
+          step={900}
+          value={end}
+          onChange={(e) => onEndChange(e.target.value)}
+          className="h-10 rounded-lg border px-2 text-sm font-semibold w-[120px]"
+          style={{
+            borderColor: error ? "#c0392b" : "rgba(26,26,46,0.18)",
+            background: "var(--paper)",
+            color: "var(--ink)",
+          }}
+        />
       </div>
+      {error ? (
+        <div className="text-xs mt-1" style={{ color: "#c0392b" }}>
+          ⚠️ {error.message}
+        </div>
+      ) : (
+        <div className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
+          {slotCount}枠分（1枠 {bs.slotMinutes}分）
+        </div>
+      )}
     </div>
   );
 }
@@ -363,6 +479,8 @@ export function PreviewClient({
   emptySummary,
   templates,
   salonName,
+  businessSettings,
+  nowIso,
 }: {
   candidates: InactiveCustomer[];
   slotInfo?: SlotInfo;
@@ -371,12 +489,36 @@ export function PreviewClient({
   emptySummary: EmptySummary;
   templates: TemplateOption[];
   salonName: string;
+  businessSettings: BusinessSettings;
+  nowIso: string;
 }) {
   const router = useRouter();
   const [checked, setChecked] = useState<Set<string>>(
     () => new Set(candidates.map((c) => c.customerId)),
   );
   const [phase, setPhase] = useState<Phase>({ tag: "idle" });
+
+  // 時刻編集 state(初期値は Server が渡した時刻 or 空)
+  const [editStart, setEditStart] = useState(slotInfo?.startHHMM ?? "");
+  const [editEnd, setEditEnd] = useState(slotInfo?.endHHMM ?? "");
+
+  const slotError = slotInfo
+    ? validate(editStart, editEnd, businessSettings, nowIso)
+    : null;
+  const editedSlotCount = slotInfo
+    ? calculateSlotCount(editStart, editEnd, businessSettings.slotMinutes)
+    : 0;
+
+  // 確認モーダルに渡す最新 slotInfo(編集後の値を反映)
+  const currentSlotInfo = useMemo<SlotInfo | undefined>(() => {
+    if (!slotInfo) return undefined;
+    return {
+      dateLabel: slotInfo.dateLabel,
+      startHHMM: editStart,
+      endHHMM: editEnd,
+      slotCount: editedSlotCount,
+    };
+  }, [slotInfo, editStart, editEnd, editedSlotCount]);
 
   function toggle(id: string) {
     setChecked((prev) => {
@@ -394,14 +536,22 @@ export function PreviewClient({
   async function handleSend(templateType: string) {
     setPhase({ tag: "sending" });
     try {
+      // 編集後の時刻を ISO 文字列に変換して送信
+      const effectiveStart = slotRawStart && editStart
+        ? hhmToIso(editStart, slotRawStart)
+        : slotRawStart;
+      const effectiveEnd = slotRawStart && editEnd
+        ? hhmToIso(editEnd, slotRawStart)
+        : slotRawEnd;
+
       const res = await fetch("/api/offers/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           selectedCustomerIds: [...checked],
           templateType,
-          slotStart: slotRawStart,
-          slotEnd: slotRawEnd,
+          slotStart: effectiveStart,
+          slotEnd: effectiveEnd,
         }),
       });
 
@@ -449,7 +599,17 @@ export function PreviewClient({
 
   return (
     <>
-      {slotInfo && <SlotInfoCard slot={slotInfo} />}
+      {slotInfo && (
+        <SlotEditor
+          dateLabel={slotInfo.dateLabel}
+          start={editStart}
+          end={editEnd}
+          onStartChange={setEditStart}
+          onEndChange={setEditEnd}
+          bs={businessSettings}
+          nowIso={nowIso}
+        />
+      )}
 
       {candidates.length === 0 ? (
         <EmptySummarySection summary={emptySummary} />
@@ -511,7 +671,12 @@ export function PreviewClient({
             </span>
             <button
               onClick={openModal}
-              disabled={checkedCount === 0 || phase.tag === "sending"}
+              disabled={
+                checkedCount === 0 ||
+                phase.tag === "sending" ||
+                !!slotError ||
+                (slotInfo != null && editedSlotCount === 0)
+              }
               className="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
               style={{ background: "var(--terra)", color: "white" }}
             >
@@ -528,7 +693,7 @@ export function PreviewClient({
           candidates={candidates}
           checkedIds={checked}
           templates={templates}
-          slotInfo={slotInfo}
+          slotInfo={currentSlotInfo}
           salonName={salonName}
           onClose={() => setPhase({ tag: "idle" })}
           onSend={handleSend}

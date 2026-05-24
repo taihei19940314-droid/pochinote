@@ -72,7 +72,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // ── サロン情報取得(トークンをログに出さない) ────────────
     const { data: salon, error: salonError } = await supabase
       .from("salons")
-      .select("id, name, line_access_token, min_resend_interval_days")
+      .select("id, name, line_access_token, min_resend_interval_days, business_hours_start, business_hours_end, min_lead_time_minutes")
       .eq("id", DEFAULT_SALON_ID)
       .single();
 
@@ -85,6 +85,37 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const accessToken = salon.line_access_token as string;
     const minIntervalDays = (salon.min_resend_interval_days as number | null) ?? 7;
+
+    // ── 時刻バリデーション(営業時間内・開始<終了・リードタイム) ─
+    const hoursStart = ((salon.business_hours_start as string | null) ?? "09:00").slice(0, 5);
+    const hoursEnd = ((salon.business_hours_end as string | null) ?? "18:00").slice(0, 5);
+    const minLeadMin = (salon.min_lead_time_minutes as number | null) ?? 120;
+
+    function toJstHHMM(d: Date): string {
+      const jst = new Date(d.getTime() + 9 * 3600_000);
+      return `${String(jst.getUTCHours()).padStart(2, "0")}:${String(jst.getUTCMinutes()).padStart(2, "0")}`;
+    }
+    function hhmmToMin(hhmm: string): number {
+      const [h, m] = hhmm.split(":").map(Number);
+      return h * 60 + m;
+    }
+
+    const startMin = hhmmToMin(toJstHHMM(slotStartDate));
+    const endMin = hhmmToMin(toJstHHMM(slotEndDate));
+    const bsStartMin = hhmmToMin(hoursStart);
+    const bsEndMin = hhmmToMin(hoursEnd);
+    const nowJst = new Date(Date.now() + 9 * 3600_000);
+    const nowMin = nowJst.getUTCHours() * 60 + nowJst.getUTCMinutes();
+
+    if (startMin >= endMin) {
+      return NextResponse.json({ error: "終了時刻は開始時刻より後にしてください" }, { status: 400 });
+    }
+    if (startMin < bsStartMin || endMin > bsEndMin) {
+      return NextResponse.json({ error: `営業時間外です（営業: ${hoursStart}〜${hoursEnd}）` }, { status: 400 });
+    }
+    if (startMin < nowMin + minLeadMin) {
+      return NextResponse.json({ error: `リードタイム（${minLeadMin}分）後以降を指定してください` }, { status: 400 });
+    }
 
     // ── テンプレート取得 ─────────────────────────────────────
     const { data: template, error: tplError } = await supabase
