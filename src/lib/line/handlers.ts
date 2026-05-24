@@ -56,16 +56,16 @@ async function lineReply(
 
 function buildReplyText(action: string, templateTypeUsed: string | null): string {
   if (action === "decline") {
-    return "ご連絡ありがとうございます🐶\nまたのご利用、お待ちしております。";
+    return "ご連絡ありがとうございます。\nまたのご利用、お待ちしております。";
   }
   // action === "book"
   switch (templateTypeUsed) {
     case "friendly":
-      return "🐶 ご希望ありがとうございます!\nサロンから改めてご連絡させていただきますね。\n少々お待ちください😊";
+      return "ご希望ありがとうございます!\nサロンから改めてご連絡させていただきますね。\n少々お待ちください😊";
     case "business":
       return "ご希望を承りました。\nサロンより確認のご連絡を差し上げます。\n今しばらくお待ちください。";
     case "sales":
-      return "🌸 ありがとうございます!\nサロンから折り返しご連絡いたします✨";
+      return "ありがとうございます!\nサロンから折り返しご連絡いたします✨";
     default:
       return "ご希望を承りました。\nサロンより確認のご連絡を差し上げます。";
   }
