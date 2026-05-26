@@ -104,8 +104,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const endMin = hhmmToMin(toJstHHMM(slotEndDate));
     const bsStartMin = hhmmToMin(hoursStart);
     const bsEndMin = hhmmToMin(hoursEnd);
-    const nowJst = new Date(Date.now() + 9 * 3600_000);
-    const nowMin = nowJst.getUTCHours() * 60 + nowJst.getUTCMinutes();
+    const now = new Date();
 
     if (startMin >= endMin) {
       return NextResponse.json({ error: "終了時刻は開始時刻より後にしてください" }, { status: 400 });
@@ -113,7 +112,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (startMin < bsStartMin || endMin > bsEndMin) {
       return NextResponse.json({ error: `営業時間外です（営業: ${hoursStart}〜${hoursEnd}）` }, { status: 400 });
     }
-    if (startMin < nowMin + minLeadMin) {
+    // 絶対ms比較で日付をまたぐ枠(翌日以降)を正しく判定する
+    const thresholdMs = now.getTime() + minLeadMin * 60_000;
+    if (slotStartDate.getTime() < thresholdMs) {
       return NextResponse.json({ error: `リードタイム（${minLeadMin}分）後以降を指定してください` }, { status: 400 });
     }
 
@@ -186,7 +187,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     // ── offer_recipients 一括 INSERT ────────────────────────
-    const now = new Date();
     const recipientRows = validCustomers.map((c) => ({
       salon_id: DEFAULT_SALON_ID,
       offer_id: offer.id,
