@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 import { expandTemplateVariables } from "@/lib/line/expand-template-variables";
 import { calculateSlotCount } from "@/lib/availability-client";
+import { getJstDateStr } from "@/lib/availability";
 import type { InactiveCustomer } from "@/lib/inactive-customers";
 
 // ─── 型定義 ──────────────────────────────────────────────────
@@ -93,6 +94,7 @@ function validate(
   end: string,
   bs: BusinessSettings,
   nowIso: string,
+  slotDateIso: string,
 ): ValidationError | null {
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
@@ -112,11 +114,11 @@ function validate(
     };
   }
 
-  // リードタイム: 現在 JST の HH:MM との比較
-  const nowJst = new Date(new Date(nowIso).getTime() + 9 * 3600_000);
-  const nowMin = nowJst.getUTCHours() * 60 + nowJst.getUTCMinutes();
-  const minStart = nowMin + bs.minLeadTimeMinutes;
-  if (startMin < minStart) {
+  // リードタイム: 絶対時刻(ms)で比較することで日付をまたぐ枠を正しく判定する
+  const slotJstDate = getJstDateStr(new Date(slotDateIso));
+  const slotStartMs = new Date(`${slotJstDate}T${start}:00+09:00`).getTime();
+  const thresholdMs = new Date(nowIso).getTime() + bs.minLeadTimeMinutes * 60_000;
+  if (slotStartMs < thresholdMs) {
     return {
       type: "lead",
       message: `リードタイム（${bs.minLeadTimeMinutes}分）後以降を指定してください`,
@@ -135,6 +137,7 @@ function SlotEditor({
   onEndChange,
   bs,
   nowIso,
+  slotDateIso,
 }: {
   dateLabel: string;
   start: string;
@@ -143,9 +146,10 @@ function SlotEditor({
   onEndChange: (v: string) => void;
   bs: BusinessSettings;
   nowIso: string;
+  slotDateIso: string;
 }) {
   const slotCount = calculateSlotCount(start, end, bs.slotMinutes);
-  const error = validate(start, end, bs, nowIso);
+  const error = validate(start, end, bs, nowIso, slotDateIso);
 
   return (
     <div className="card p-4 mb-6" style={{ borderLeft: "3px solid var(--terra)" }}>
@@ -502,8 +506,8 @@ export function PreviewClient({
   const [editStart, setEditStart] = useState(slotInfo?.startHHMM ?? "");
   const [editEnd, setEditEnd] = useState(slotInfo?.endHHMM ?? "");
 
-  const slotError = slotInfo
-    ? validate(editStart, editEnd, businessSettings, nowIso)
+  const slotError = slotInfo && slotRawStart
+    ? validate(editStart, editEnd, businessSettings, nowIso, slotRawStart)
     : null;
   const editedSlotCount = slotInfo
     ? calculateSlotCount(editStart, editEnd, businessSettings.slotMinutes)
@@ -599,7 +603,7 @@ export function PreviewClient({
 
   return (
     <>
-      {slotInfo && (
+      {slotInfo && slotRawStart && (
         <SlotEditor
           dateLabel={slotInfo.dateLabel}
           start={editStart}
@@ -608,6 +612,7 @@ export function PreviewClient({
           onEndChange={setEditEnd}
           bs={businessSettings}
           nowIso={nowIso}
+          slotDateIso={slotRawStart}
         />
       )}
 
