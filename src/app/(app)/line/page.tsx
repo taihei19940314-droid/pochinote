@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Settings, Send, MessageSquare, History, UserPlus, ChevronRight } from "lucide-react";
+import { Settings, Send, MessageSquare, History, UserPlus, ChevronRight, CheckCircle } from "lucide-react";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
@@ -17,7 +17,14 @@ export default async function LinePage() {
     .like("name", "(未特定%")
     .eq("ignored", false);
 
+  const { count: bookingRequestCount } = await supabase
+    .from("offer_recipients")
+    .select("id", { count: "exact", head: true })
+    .eq("salon_id", DEFAULT_SALON_ID)
+    .eq("status", "booked");
+
   const n = pendingCount ?? 0;
+  const b = bookingRequestCount ?? 0;
 
   const menuItems = [
     {
@@ -41,8 +48,16 @@ export default async function LinePage() {
       icon: Send,
       label: "オファー候補",
       sub: "空き枠への送信候補を確認・送信",
-      badge: "準備中",
+      badge: null,
       countBadge: null,
+    },
+    {
+      href: "/line/offers/pending",
+      icon: CheckCircle,
+      label: "予約承認待ち",
+      sub: "予約希望の承認・却下",
+      badge: null,
+      countBadge: b > 0 ? b : null,
     },
     {
       href: "/line/templates",

@@ -145,10 +145,11 @@ export default async function DashboardPage() {
             }
           </h1>
           {(bookingRequestCount ?? 0) > 0 && (
-            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold"
+            <Link href="/line/offers/pending"
+              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
               style={{ background: "rgba(217,119,87,0.12)", color: "var(--terra)" }}>
               📩 予約希望 {bookingRequestCount}件
-            </div>
+            </Link>
           )}
           {firstTime && lastTime && (
             <p className="text-sm mt-3" style={{ color: "var(--ink-soft)" }}>

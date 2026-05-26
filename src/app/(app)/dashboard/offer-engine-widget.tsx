@@ -113,8 +113,9 @@ export function OfferEngineWidget({ bookingRequestCount = 0 }: { bookingRequestC
 
       {/* 予約希望バナー */}
       {bookingRequestCount > 0 && (
-        <div
-          className="mb-4 px-3 py-2.5 rounded-lg flex items-center justify-between gap-2"
+        <Link
+          href="/line/offers/pending"
+          className="mb-4 px-3 py-2.5 rounded-lg flex items-center justify-between gap-2 transition-opacity hover:opacity-80"
           style={{ background: "rgba(217,119,87,0.18)" }}
         >
           <span className="text-xs font-semibold" style={{ color: "var(--terra)" }}>
@@ -124,9 +125,9 @@ export function OfferEngineWidget({ bookingRequestCount = 0 }: { bookingRequestC
             className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
             style={{ background: "rgba(217,119,87,0.2)", color: "rgba(250,247,242,0.5)" }}
           >
-            準備中
+            承認する →
           </span>
-        </div>
+        </Link>
       )}
 
       {/* 説明文 */}
