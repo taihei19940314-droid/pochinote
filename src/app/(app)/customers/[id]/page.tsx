@@ -71,12 +71,13 @@ export default async function CustomerDetailPage({
     .select("id, name, breed, gender, birth_date, weight_kg, notes, rabies_vaccination_date")
     .eq("customer_id", id);
 
+  const nowIso = new Date().toISOString();
   const [{ data: bookings }, { data: upcomingBookings }] = await Promise.all([
     supabase
       .from("bookings")
       .select("id, scheduled_at, services, price, status, duration_min, memo, staff:staff_id(name)")
       .eq("customer_id", id)
-      .in("status", ["completed", "in_progress", "cancelled"])
+      .or(`status.in.(completed,in_progress,cancelled),and(status.eq.confirmed,scheduled_at.lt.${nowIso})`)
       .order("scheduled_at", { ascending: false }),
     supabase
       .from("bookings")
