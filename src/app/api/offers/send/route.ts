@@ -136,7 +136,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // ── 顧客取得 + 妥当性チェック ────────────────────────────
     const { data: customers, error: custError } = await supabase
       .from("customers")
-      .select("id, name, line_user_id, line_follow_status, last_visit_at, pets(name, breed)")
+      .select("id, name, line_user_id, line_follow_status, last_visit_at, pets(id, name, breed)")
       .in("id", selectedCustomerIds as string[])
       .eq("salon_id", DEFAULT_SALON_ID)
       .eq("line_follow_status", "followed")
@@ -265,9 +265,9 @@ export async function POST(request: Request): Promise<NextResponse> {
           }
 
           // Flex Message 組み立て
-          const pets = customer.pets as Array<{ name: string; breed: string | null }> | null;
-          const pet = pets?.[0];
-          const petName = pet?.name ?? "お子様";
+          const pets = customer.pets as Array<{ id: string; name: string; breed: string | null }> | null;
+          const selectedPetId = petIdMap.get(customer.id);
+          const petName = pets?.find((p) => p.id === selectedPetId)?.name ?? "お子様";
 
           const bodyText = expandTemplateVariables(template.content as string, {
             petName,
