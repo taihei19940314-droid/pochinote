@@ -3,6 +3,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { expandTemplateVariables } from "@/lib/line/expand-template-variables";
 import { buildFlexMessage } from "@/lib/line/build-flex-message";
 import { isResendBlocked, toJstDatetime } from "@/lib/line/send-utils";
+import { selectPetForOffer } from "@/lib/pet-selection";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 const LINE_PUSH_URL = "https://api.line.me/v2/bot/message/push";
@@ -186,17 +187,45 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ error: "failed to create offer" }, { status: 500 });
     }
 
+    // ── バッチ送信結果(先に初期化) ────────────────────────────
+    const result: SendResponse = {
+      success: 0,
+      failed: [],
+      skipped: [],
+      blocked: [],
+      tokenError: false,
+    };
+
+    // ── ペット選定(pet_idなしはスキップ) ────────────────────
+    const petIdMap = new Map<string, string>();
+    await Promise.all(
+      validCustomers.map(async (c) => {
+        const petId = await selectPetForOffer(c.id, DEFAULT_SALON_ID, supabase);
+        if (petId) {
+          petIdMap.set(c.id, petId);
+        } else {
+          result.skipped.push({ name: c.name, reason: "ペット未登録" });
+        }
+      }),
+    );
+    const customersWithPet = validCustomers.filter((c) => petIdMap.has(c.id));
+
     // ── offer_recipients 一括 INSERT ────────────────────────
-    const recipientRows = validCustomers.map((c) => ({
+    const recipientRows = customersWithPet.map((c) => ({
       salon_id: DEFAULT_SALON_ID,
       offer_id: offer.id,
       customer_id: c.id,
+      pet_id: petIdMap.get(c.id)!,
       status: "pending",
       template_type_used: templateType as string,
       days_since_last_visit: c.last_visit_at
         ? Math.floor((now.getTime() - new Date(c.last_visit_at).getTime()) / 86_400_000)
         : null,
     }));
+
+    if (recipientRows.length === 0) {
+      return NextResponse.json(result);
+    }
 
     const { data: recipients, error: recipError } = await supabase
       .from("offer_recipients")
@@ -212,18 +241,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     const slotJst = toJstDatetime(slotStartDate);
 
     // ── バッチ送信 ───────────────────────────────────────────
-    const result: SendResponse = {
-      success: 0,
-      failed: [],
-      skipped: [],
-      blocked: [],
-      tokenError: false,
-    };
 
-    for (let i = 0; i < validCustomers.length; i += BATCH_SIZE) {
+    for (let i = 0; i < customersWithPet.length; i += BATCH_SIZE) {
       if (result.tokenError) break;
 
-      const batch = validCustomers.slice(i, i + BATCH_SIZE);
+      const batch = customersWithPet.slice(i, i + BATCH_SIZE);
       await Promise.all(
         batch.map(async (customer) => {
           if (result.tokenError) return;
