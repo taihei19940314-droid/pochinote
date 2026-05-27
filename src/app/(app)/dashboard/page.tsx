@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { OfferEngineWidget } from "./offer-engine-widget";
+import { formatBookingRange } from "@/lib/format-booking-time";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 const SALON_NAME = "ぽちのてトリミング";
@@ -120,8 +121,18 @@ export default async function DashboardPage() {
     .like("name", "(未特定%")
     .eq("ignored", false);
 
-  const firstTime = bookings.length > 0 ? toHHMM(bookings[0].scheduled_at) : null;
-  const lastTime = bookings.length > 0 ? toHHMM(bookings[bookings.length - 1].scheduled_at) : null;
+  // default_slot_minutes(duration_min が null の場合の fallback)
+  const { data: salonSettings } = await adminSupabase
+    .from("salons")
+    .select("default_slot_minutes")
+    .eq("id", DEFAULT_SALON_ID)
+    .single();
+  const defaultSlotMinutes = (salonSettings?.default_slot_minutes as number | null) ?? 60;
+
+  const firstBooking = bookings.length > 0 ? bookings[0] : null;
+  const lastBooking = bookings.length > 0 ? bookings[bookings.length - 1] : null;
+  const firstTime = firstBooking ? formatBookingRange(firstBooking.scheduled_at, firstBooking.duration_min, defaultSlotMinutes).start : null;
+  const lastTime = lastBooking ? formatBookingRange(lastBooking.scheduled_at, lastBooking.duration_min, defaultSlotMinutes).end : null;
 
   const hour = jstNow.getHours();
   const greeting = getGreeting(hour);
