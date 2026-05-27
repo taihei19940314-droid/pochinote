@@ -258,7 +258,7 @@ function ConfirmModal({
 
   const previewText = selectedTemplate && sample
     ? expandTemplateVariables(selectedTemplate.content, {
-        petName: sample.petName,
+        customerName: sample.customerName,
         salonName,
         date: slotInfo?.dateLabel ?? "近日中",
         time: slotInfo?.startHHMM ?? "—",
@@ -318,7 +318,7 @@ function ConfirmModal({
           {sample && (
             <div className="mb-5">
               <div className="text-xs font-semibold mb-2" style={{ color: "var(--ink-soft)" }}>
-                送信プレビュー（{sample.customerName}さん / {sample.petName}）
+                送信プレビュー（{sample.customerName}さん）
               </div>
               <div
                 className="rounded-xl p-4 text-sm leading-relaxed whitespace-pre-line"
@@ -633,10 +633,6 @@ export function PreviewClient({
               <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-semibold truncate">{c.customerName}</div>
-                  <div className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
-                    {c.petName}
-                    {c.petBreed ? `（${c.petBreed}）` : ""}
-                  </div>
                 </div>
                 <div className="text-right shrink-0">
                   <div className="text-lg font-bold tabular-nums" style={{ color: "var(--sage)" }}>

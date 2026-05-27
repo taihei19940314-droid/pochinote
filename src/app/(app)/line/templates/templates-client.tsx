@@ -72,7 +72,7 @@ function TemplateCard({
   });
 
   const previewSamples = {
-    petName: "こてつ",
+    customerName: "田中 花子",
     salonName: salonName || "サロン名",
     date: "5月25日(日)",
     time: "14:00",
@@ -293,7 +293,7 @@ export function TemplatesClient({ templates, salonName }: Props) {
         <h2 className="font-semibold text-sm mb-3">使える変数</h2>
         <ul className="space-y-2">
           {[
-            ["{ペット名}", "ワンちゃんの名前"],
+            ["{顧客名}", "お客様の名前"],
             ["{サロン名}", "サロン名"],
             ["{日付}", "空き枠の日付"],
             ["{時刻}", "空き枠の時刻"],

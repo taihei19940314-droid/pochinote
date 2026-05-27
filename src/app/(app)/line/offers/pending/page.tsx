@@ -31,7 +31,7 @@ export default async function PendingPage() {
   const supabase = createAdminClient();
   const now = new Date();
 
-  // status='booked' の予約希望を取得(customers + pets + offers JOIN)
+  // status='booked' の予約希望を取得
   const { data: rawRecipients } = await supabase
     .from("offer_recipients")
     .select(`
@@ -40,8 +40,7 @@ export default async function PendingPage() {
       booked_at,
       customer_id,
       customers(name),
-      offers(available_from),
-      pets:customer_id(pets(name, breed))
+      offers(available_from)
     `)
     .eq("salon_id", DEFAULT_SALON_ID)
     .eq("status", "booked")
@@ -63,31 +62,6 @@ export default async function PendingPage() {
     }
   }
 
-  // customers + pets を別クエリで取得(JOIN がネストするため)
-  const customerIds = [...new Set((rawRecipients ?? []).map((r) => r.customer_id as string))];
-  const { data: customers } = customerIds.length > 0
-    ? await supabase
-        .from("customers")
-        .select("id, name")
-        .in("id", customerIds)
-    : { data: [] };
-
-  const { data: pets } = customerIds.length > 0
-    ? await supabase
-        .from("pets")
-        .select("customer_id, name, breed")
-        .in("customer_id", customerIds)
-        .order("created_at", { ascending: true })
-    : { data: [] };
-
-  const customerMap = new Map((customers ?? []).map((c) => [c.id, c.name as string]));
-  const petMap = new Map(
-    (pets ?? []).map((p) => [
-      p.customer_id as string,
-      { name: p.name as string, breed: p.breed as string | null },
-    ]),
-  );
-
   const recipients: PendingRecipient[] = (rawRecipients ?? []).flatMap((r) => {
     const offer = Array.isArray(r.offers) ? r.offers[0] : r.offers;
     const availableFrom = offer?.available_from as string | undefined;
@@ -99,16 +73,17 @@ export default async function PendingPage() {
     const competingCount = totalBooked - 1;
 
     const customerId = r.customer_id as string;
-    const pet = petMap.get(customerId);
+    const customerRow = r.customers as unknown as { name: string } | { name: string }[] | null;
+    const customerName = Array.isArray(customerRow)
+      ? (customerRow[0]?.name ?? "不明")
+      : (customerRow?.name ?? "不明");
 
     return [
       {
         id: r.id as string,
         offerId,
         bookedAt: r.booked_at as string,
-        customerName: customerMap.get(customerId) ?? "不明",
-        petName: pet?.name ?? "不明",
-        petBreed: pet?.breed ?? null,
+        customerName,
         slotDateLabel: buildDateLabel(availableFrom, now),
         slotStartHHMM: toHHMM(availableFrom),
         competingCount,

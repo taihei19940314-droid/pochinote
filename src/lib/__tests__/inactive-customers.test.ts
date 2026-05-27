@@ -10,7 +10,6 @@
 import {
   detectInactiveCustomers,
   type CustomerRow,
-  type PetRow,
   type RecentOfferRow,
 } from "../inactive-customers.js";
 
@@ -43,16 +42,9 @@ const BASE_CUSTOMER: CustomerRow = {
   last_visit_at: daysAgo(70), // 70日前
 };
 
-const BASE_PET: PetRow = {
-  customer_id: "c1",
-  name: "こてつ",
-  breed: "トイプードル",
-};
-
 const BASE_ARGS = {
   now: NOW,
   customers: [BASE_CUSTOMER],
-  pets: [BASE_PET],
   recentOffers: [] as RecentOfferRow[],
   inactiveThresholdDays: 60,
   minResendIntervalDays: 7,
@@ -68,7 +60,7 @@ const s1 = detectInactiveCustomers(BASE_ARGS);
 console.log("  結果:", s1.map((c) => `${c.customerName}(${c.daysSinceLastVisit}日)`));
 assert("候補が1件", s1.length === 1, `実際: ${s1.length}件`);
 assert("daysSinceLastVisit = 70", s1[0]?.daysSinceLastVisit === 70, `実際: ${s1[0]?.daysSinceLastVisit}`);
-assert("petName = こてつ", s1[0]?.petName === "こてつ");
+assert("customerName = 田中 花子", s1[0]?.customerName === "田中 花子");
 
 // ─────────────────────────────────────────────────────────
 // シナリオ2: last_visit_at が閾値以内 → 除外
@@ -141,7 +133,6 @@ const s6b = detectInactiveCustomers({
     BASE_CUSTOMER,
     { id: "c2", name: "鈴木 太郎", line_user_id: "U456", line_follow_status: "followed", last_visit_at: daysAgo(80) },
   ],
-  pets: [BASE_PET, { customer_id: "c2", name: "ぽち", breed: null }],
   recentOffers: [{ customer_id: "c1", sent_at: daysAgo(3) }],
 });
 assert("c1 は除外、c2 は通過(1件)", s6b.length === 1 && s6b[0].customerId === "c2");
@@ -158,11 +149,6 @@ const s7 = detectInactiveCustomers({
     { id: "c1", name: "田中", line_user_id: "U1", line_follow_status: "followed", last_visit_at: daysAgo(70) },
     { id: "c2", name: "鈴木", line_user_id: "U2", line_follow_status: "followed", last_visit_at: daysAgo(90) },
     { id: "c3", name: "佐藤", line_user_id: "U3", line_follow_status: "followed", last_visit_at: daysAgo(65) },
-  ],
-  pets: [
-    { customer_id: "c1", name: "こてつ", breed: null },
-    { customer_id: "c2", name: "ぽち",   breed: null },
-    { customer_id: "c3", name: "もも",   breed: null },
   ],
 });
 console.log("  結果順:", s7.map((c) => `${c.customerName}(${c.daysSinceLastVisit}日)`));

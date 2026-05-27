@@ -3,7 +3,6 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { expandTemplateVariables } from "@/lib/line/expand-template-variables";
 import { buildFlexMessage } from "@/lib/line/build-flex-message";
 import { isResendBlocked, toJstDatetime } from "@/lib/line/send-utils";
-import { selectPetForOffer } from "@/lib/pet-selection";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 const LINE_PUSH_URL = "https://api.line.me/v2/bot/message/push";
@@ -136,7 +135,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // ── 顧客取得 + 妥当性チェック ────────────────────────────
     const { data: customers, error: custError } = await supabase
       .from("customers")
-      .select("id, name, line_user_id, line_follow_status, last_visit_at, pets(id, name, breed)")
+      .select("id, name, line_user_id, line_follow_status, last_visit_at")
       .in("id", selectedCustomerIds as string[])
       .eq("salon_id", DEFAULT_SALON_ID)
       .eq("line_follow_status", "followed")
@@ -196,36 +195,17 @@ export async function POST(request: Request): Promise<NextResponse> {
       tokenError: false,
     };
 
-    // ── ペット選定(pet_idなしはスキップ) ────────────────────
-    const petIdMap = new Map<string, string>();
-    await Promise.all(
-      validCustomers.map(async (c) => {
-        const petId = await selectPetForOffer(c.id, DEFAULT_SALON_ID, supabase);
-        if (petId) {
-          petIdMap.set(c.id, petId);
-        } else {
-          result.skipped.push({ name: c.name, reason: "ペット未登録" });
-        }
-      }),
-    );
-    const customersWithPet = validCustomers.filter((c) => petIdMap.has(c.id));
-
     // ── offer_recipients 一括 INSERT ────────────────────────
-    const recipientRows = customersWithPet.map((c) => ({
+    const recipientRows = validCustomers.map((c) => ({
       salon_id: DEFAULT_SALON_ID,
       offer_id: offer.id,
       customer_id: c.id,
-      pet_id: petIdMap.get(c.id)!,
       status: "pending",
       template_type_used: templateType as string,
       days_since_last_visit: c.last_visit_at
         ? Math.floor((now.getTime() - new Date(c.last_visit_at).getTime()) / 86_400_000)
         : null,
     }));
-
-    if (recipientRows.length === 0) {
-      return NextResponse.json(result);
-    }
 
     const { data: recipients, error: recipError } = await supabase
       .from("offer_recipients")
@@ -242,10 +222,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     // ── バッチ送信 ───────────────────────────────────────────
 
-    for (let i = 0; i < customersWithPet.length; i += BATCH_SIZE) {
+    for (let i = 0; i < validCustomers.length; i += BATCH_SIZE) {
       if (result.tokenError) break;
 
-      const batch = customersWithPet.slice(i, i + BATCH_SIZE);
+      const batch = validCustomers.slice(i, i + BATCH_SIZE);
       await Promise.all(
         batch.map(async (customer) => {
           if (result.tokenError) return;
@@ -265,12 +245,10 @@ export async function POST(request: Request): Promise<NextResponse> {
           }
 
           // Flex Message 組み立て
-          const pets = customer.pets as Array<{ id: string; name: string; breed: string | null }> | null;
-          const selectedPetId = petIdMap.get(customer.id);
-          const petName = pets?.find((p) => p.id === selectedPetId)?.name ?? "お子様";
+          const customerName = customer.name as string;
 
           const bodyText = expandTemplateVariables(template.content as string, {
-            petName,
+            customerName,
             salonName: (salon.name as string | null) ?? "サロン",
             date: slotJst.date,
             time: slotJst.time,
@@ -279,7 +257,7 @@ export async function POST(request: Request): Promise<NextResponse> {
               : 0,
           });
 
-          const flexPayload = buildFlexMessage({ bodyText, petName, recipientId });
+          const flexPayload = buildFlexMessage({ bodyText, customerName, recipientId });
 
           // LINE Push API 呼び出し
           try {

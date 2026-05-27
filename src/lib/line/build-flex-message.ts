@@ -10,16 +10,16 @@ export type FlexMessagePayload = {
 
 export function buildFlexMessage({
   bodyText,
-  petName,
+  customerName,
   recipientId,
 }: {
   bodyText: string;
-  petName: string;
+  customerName: string;
   recipientId: string;
 }): FlexMessagePayload {
   return {
     type: "flex",
-    altText: `${petName}ちゃんへのご連絡です`,
+    altText: `${customerName}様へのご連絡です`,
     contents: {
       type: "bubble",
       body: {

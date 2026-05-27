@@ -1,5 +1,5 @@
 export interface TemplateVariables {
-  petName: string;
+  customerName: string;
   salonName: string;
   date: string;
   time: string;
@@ -11,7 +11,7 @@ export function expandTemplateVariables(
   values: TemplateVariables
 ): string {
   return template
-    .replace(/\{ペット名\}/g, values.petName)
+    .replace(/\{顧客名\}/g, values.customerName)
     .replace(/\{サロン名\}/g, values.salonName)
     .replace(/\{日付\}/g, values.date)
     .replace(/\{時刻\}/g, values.time)

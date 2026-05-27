@@ -9,8 +9,6 @@ export type PendingRecipient = {
   offerId: string;
   bookedAt: string;
   customerName: string;
-  petName: string;
-  petBreed: string | null;
   slotDateLabel: string;
   slotStartHHMM: string;
   competingCount: number;
@@ -76,14 +74,10 @@ function RecipientCard({
         {recipient.slotDateLabel} {recipient.slotStartHHMM}〜
       </div>
 
-      {/* 顧客・ペット */}
+      {/* 顧客 */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <div className="font-semibold text-base">{recipient.customerName}</div>
-          <div className="text-sm mt-0.5" style={{ color: "var(--ink-soft)" }}>
-            {recipient.petName}
-            {recipient.petBreed ? `（${recipient.petBreed}）` : ""}
-          </div>
         </div>
         <div className="text-xs flex-shrink-0 mt-0.5" style={{ color: "var(--ink-soft)" }}>
           {formatRelative(recipient.bookedAt)}

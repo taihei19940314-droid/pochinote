@@ -33,20 +33,6 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json({ error: "failed to fetch customers" }, { status: 500 });
     }
 
-    // ペット一覧
-    const customerIds = (customers ?? []).map((c) => c.id);
-    const { data: pets, error: petsError } =
-      customerIds.length > 0
-        ? await supabase
-            .from("pets")
-            .select("customer_id, name, breed")
-            .in("customer_id", customerIds)
-        : { data: [], error: null };
-
-    if (petsError) {
-      return NextResponse.json({ error: "failed to fetch pets" }, { status: 500 });
-    }
-
     // 再送禁止期間内の送信履歴
     const cutoff = new Date(now.getTime() - minResendIntervalDays * 24 * 60 * 60 * 1000);
     const { data: recentOffers, error: offersError } = await supabase
@@ -66,7 +52,6 @@ export async function GET(): Promise<NextResponse> {
     const candidates = detectInactiveCustomers({
       now,
       customers: identifiedCustomers,
-      pets: pets ?? [],
       recentOffers: recentOffers ?? [],
       inactiveThresholdDays,
       minResendIntervalDays,

@@ -15,7 +15,7 @@ export async function approveBookingRequest(recipientId: string): Promise<Action
   // 冪等性: 既に処理済みか確認
   const { data: recipient } = await supabase
     .from("offer_recipients")
-    .select("id, offer_id, customer_id, pet_id, status")
+    .select("id, offer_id, customer_id, status")
     .eq("id", recipientId)
     .eq("salon_id", DEFAULT_SALON_ID)
     .single();
@@ -24,8 +24,6 @@ export async function approveBookingRequest(recipientId: string): Promise<Action
   if (recipient.status !== "booked") return { ok: false, error: "既に処理済みです" };
 
   const customerId = recipient.customer_id as string;
-  const petId = recipient.pet_id as string | null;
-  if (!petId) return { ok: false, error: "ペットが登録されていないため承認できません" };
 
   // サロン設定(duration_min 用)
   const { data: salon } = await supabase
@@ -49,7 +47,7 @@ export async function approveBookingRequest(recipientId: string): Promise<Action
     .insert({
       salon_id: DEFAULT_SALON_ID,
       customer_id: customerId,
-      pet_id: petId,
+      pet_id: null,
       scheduled_at: offer.available_from as string,
       duration_min: durationMin,
       services: [],

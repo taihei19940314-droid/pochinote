@@ -101,15 +101,6 @@ export default async function OffersPreviewPage({
     .select("id, name, line_user_id, line_follow_status, last_visit_at")
     .eq("salon_id", DEFAULT_SALON_ID);
 
-  const customerIds = (customers ?? []).map((c) => c.id);
-  const { data: pets } =
-    customerIds.length > 0
-      ? await supabase
-          .from("pets")
-          .select("customer_id, name, breed")
-          .in("customer_id", customerIds)
-      : { data: [] };
-
   const cutoff = new Date(now.getTime() - minResendIntervalDays * 24 * 60 * 60 * 1000);
   const { data: recentOffers } = await supabase
     .from("offer_recipients")
@@ -139,7 +130,6 @@ export default async function OffersPreviewPage({
   const candidates = detectInactiveCustomers({
     now,
     customers: identifiedCustomers,
-    pets: pets ?? [],
     recentOffers: recentOffers ?? [],
     inactiveThresholdDays,
     minResendIntervalDays,

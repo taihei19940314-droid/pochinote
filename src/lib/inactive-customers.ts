@@ -11,12 +11,6 @@ export type CustomerRow = {
   last_visit_at: string | null; // ISO 8601
 };
 
-export type PetRow = {
-  customer_id: string;
-  name: string;
-  breed: string | null;
-};
-
 export type RecentOfferRow = {
   customer_id: string;
   sent_at: string; // ISO 8601
@@ -25,8 +19,6 @@ export type RecentOfferRow = {
 export type InactiveCustomer = {
   customerId: string;
   customerName: string;
-  petName: string;
-  petBreed: string | null;
   lastVisitAt: Date;
   daysSinceLastVisit: number;
   lineUserId: string;
@@ -37,23 +29,14 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export function detectInactiveCustomers(args: {
   now: Date;
   customers: CustomerRow[];
-  pets: PetRow[];
   recentOffers: RecentOfferRow[];
   inactiveThresholdDays: number;
   minResendIntervalDays: number;
 }): InactiveCustomer[] {
-  const { now, customers, pets, recentOffers, inactiveThresholdDays } = args;
+  const { now, customers, recentOffers, inactiveThresholdDays } = args;
 
   // 再送禁止対象の customer_id を Set で引く
   const recentlySentIds = new Set(recentOffers.map((o) => o.customer_id));
-
-  // ペットを customer_id → 最初の1件 で引ける Map を構築
-  const petMap = new Map<string, PetRow>();
-  for (const pet of pets) {
-    if (!petMap.has(pet.customer_id)) {
-      petMap.set(pet.customer_id, pet);
-    }
-  }
 
   const results: InactiveCustomer[] = [];
 
@@ -77,12 +60,9 @@ export function detectInactiveCustomers(args: {
     // 5. 再送禁止期間内に送信履歴あり → 除外
     if (recentlySentIds.has(c.id)) continue;
 
-    const pet = petMap.get(c.id);
     results.push({
       customerId: c.id,
       customerName: c.name,
-      petName: pet?.name ?? "—",
-      petBreed: pet?.breed ?? null,
       lastVisitAt,
       daysSinceLastVisit,
       lineUserId: c.line_user_id,
