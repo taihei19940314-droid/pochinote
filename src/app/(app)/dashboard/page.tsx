@@ -231,7 +231,7 @@ export default async function DashboardPage() {
             {monthlyOfferRevenue > 0 ? (
               <>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-display text-xl lg:text-2xl font-light break-all">
+                  <span className="font-display text-xl lg:text-2xl font-light whitespace-nowrap">
                     ¥{monthlyOfferRevenue.toLocaleString("ja-JP")}
                   </span>
                 </div>
