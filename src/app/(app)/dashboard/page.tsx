@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { OfferEngineWidget } from "./offer-engine-widget";
 import { formatBookingRange } from "@/lib/format-booking-time";
+import { calculateMonthlyOfferRevenue } from "@/lib/offer-revenue";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 const SALON_NAME = "ぽちのてトリミング";
@@ -121,6 +122,26 @@ export default async function DashboardPage() {
     .like("name", "(未特定%")
     .eq("ignored", false);
 
+  // LINE オファー経由の今月売上
+  const now = new Date();
+  const nowJstForRevenue = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const ry = nowJstForRevenue.getUTCFullYear();
+  const rm = nowJstForRevenue.getUTCMonth();
+  const jstOffsetMs = 9 * 60 * 60 * 1000;
+  const monthStartUtc = new Date(Date.UTC(ry, rm, 1) - jstOffsetMs);
+  const nextMonthStartUtc = new Date(Date.UTC(ry, rm + 1, 1) - jstOffsetMs);
+
+  const { data: offerBookings } = await adminSupabase
+    .from("bookings")
+    .select("scheduled_at, status, price, memo")
+    .eq("salon_id", DEFAULT_SALON_ID)
+    .in("status", ["confirmed", "completed"])
+    .eq("memo", "LINE オファー経由")
+    .gte("scheduled_at", monthStartUtc.toISOString())
+    .lt("scheduled_at", nextMonthStartUtc.toISOString());
+
+  const monthlyOfferRevenue = calculateMonthlyOfferRevenue(offerBookings ?? [], now);
+
   // default_slot_minutes(duration_min が null の場合の fallback)
   const { data: salonSettings } = await adminSupabase
     .from("salons")
@@ -202,17 +223,25 @@ export default async function DashboardPage() {
           </div>
 
           {/* 空き枠オファー */}
-          <div className="card p-4 lg:p-5 relative overflow-hidden" style={{ background: "var(--ink)", color: "var(--paper)" }}>
+          <div className="card p-4 lg:p-5" style={{ background: "var(--ink)", color: "var(--paper)" }}>
             <div className="flex items-center justify-between mb-2 lg:mb-3">
               <div className="text-[10px] lg:text-[11px] tracking-wider uppercase opacity-70">空き枠オファー</div>
-              <span className="w-2 h-2 rounded-full opacity-40" style={{ background: "var(--terra)" }} />
+              <span className="w-2 h-2 rounded-full" style={{ background: "var(--terra)" }} />
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className="font-display text-3xl lg:text-5xl font-light opacity-20">—</span>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-1 rounded-full" style={{ background: "rgba(250,247,242,0.1)", color: "rgba(250,247,242,0.6)" }}>準備中</span>
-            </div>
+            {monthlyOfferRevenue > 0 ? (
+              <>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-display text-3xl lg:text-5xl font-light">
+                    ¥{monthlyOfferRevenue.toLocaleString("ja-JP")}
+                  </span>
+                </div>
+                <div className="text-[10px] mt-1 lg:mt-2 opacity-50">今月の経由売上</div>
+              </>
+            ) : (
+              <div className="text-xs opacity-60 mt-1 leading-relaxed">
+                まだオファー経由の<br />来店がありません
+              </div>
+            )}
           </div>
         </div>
       </div>
