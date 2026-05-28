@@ -168,9 +168,9 @@ export default async function DashboardPage() {
         {/* Greeting */}
         <div className="lg:col-span-7 mb-5 lg:mb-0">
           <div className="text-xs tracking-[0.2em] uppercase mb-2" style={{ color: "var(--ink-soft)" }}>{dateLabel}</div>
-          <h1 className="font-display text-[32px] lg:text-[40px] leading-[1.1] font-light tracking-tight">
+          <h1 className="font-display text-[22px] sm:text-[28px] lg:text-[40px] leading-[1.2] font-light tracking-tight">
             {greeting}、<br />
-            <span className="italic whitespace-nowrap" style={{ color: "var(--terra)" }}>{SALON_NAME}さん</span>。<br />
+            <span className="italic" style={{ color: "var(--terra)" }}>{SALON_NAME}さん</span>。<br />
             {bookings.length > 0
               ? <span className="whitespace-nowrap">今日は <span className="font-semibold">{bookings.length}</span> 件の予約。</span>
               : <span className="whitespace-nowrap">今日の予約はまだありません。</span>
@@ -231,7 +231,7 @@ export default async function DashboardPage() {
             {monthlyOfferRevenue > 0 ? (
               <>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-display text-3xl lg:text-5xl font-light">
+                  <span className="font-display text-xl lg:text-2xl font-light break-all">
                     ¥{monthlyOfferRevenue.toLocaleString("ja-JP")}
                   </span>
                 </div>
