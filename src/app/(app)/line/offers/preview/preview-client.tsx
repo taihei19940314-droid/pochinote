@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 import { expandTemplateVariables } from "@/lib/line/expand-template-variables";
 import { calculateSlotCount } from "@/lib/availability-client";
@@ -238,6 +238,7 @@ function ConfirmModal({
   templates,
   slotInfo,
   salonName,
+  isDemoMode,
   onClose,
   onSend,
 }: {
@@ -247,6 +248,7 @@ function ConfirmModal({
   templates: TemplateOption[];
   slotInfo?: SlotInfo;
   salonName: string;
+  isDemoMode: boolean;
   onClose: () => void;
   onSend: (templateType: string) => void;
 }) {
@@ -345,7 +347,8 @@ function ConfirmModal({
             </button>
             <button
               onClick={() => onSend(selectedType)}
-              disabled={selectedCandidates.length === 0}
+              disabled={selectedCandidates.length === 0 || isDemoMode}
+              title={isDemoMode ? "デモ画面のため操作できません" : undefined}
               className="flex-1 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
               style={{ background: "var(--terra)", color: "white" }}
             >
@@ -497,6 +500,8 @@ export function PreviewClient({
   nowIso: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isDemoMode = pathname.startsWith("/demo");
   const [checked, setChecked] = useState<Set<string>>(
     () => new Set(candidates.map((c) => c.customerId)),
   );
@@ -538,6 +543,10 @@ export function PreviewClient({
   }
 
   async function handleSend(templateType: string) {
+    if (isDemoMode) {
+      setPhase({ tag: "idle" });
+      return;
+    }
     setPhase({ tag: "sending" });
     try {
       // 編集後の時刻を ISO 文字列に変換して送信
@@ -673,11 +682,13 @@ export function PreviewClient({
             <button
               onClick={openModal}
               disabled={
+                isDemoMode ||
                 checkedCount === 0 ||
                 phase.tag === "sending" ||
                 !!slotError ||
                 (slotInfo != null && editedSlotCount === 0)
               }
+              title={isDemoMode ? "デモ画面のため操作できません" : undefined}
               className="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
               style={{ background: "var(--terra)", color: "white" }}
             >
@@ -696,6 +707,7 @@ export function PreviewClient({
           templates={templates}
           slotInfo={currentSlotInfo}
           salonName={salonName}
+          isDemoMode={isDemoMode}
           onClose={() => setPhase({ tag: "idle" })}
           onSend={handleSend}
         />

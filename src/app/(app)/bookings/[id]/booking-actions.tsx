@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 interface Props {
@@ -12,11 +12,17 @@ interface Props {
 
 export function CancelButton({ bookingId, status }: Pick<Props, "bookingId" | "status">) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isDemoMode = pathname.startsWith("/demo");
   const [loading, setLoading] = useState(false);
 
   if (status !== "confirmed" && status !== "in_progress") return null;
 
   async function handleCancel() {
+    if (isDemoMode) {
+      alert("デモ画面のため、この操作はできません");
+      return;
+    }
     if (!window.confirm("この予約をキャンセルしますか?")) return;
     setLoading(true);
     const { error } = await createClient()
@@ -34,8 +40,9 @@ export function CancelButton({ bookingId, status }: Pick<Props, "bookingId" | "s
   return (
     <button
       onClick={handleCancel}
-      disabled={loading}
-      className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5 disabled:opacity-50"
+      disabled={loading || isDemoMode}
+      title={isDemoMode ? "デモ画面のため操作できません" : undefined}
+      className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors hover:bg-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
       style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink-soft)" }}
     >
       {loading ? "処理中…" : "⊘ キャンセル"}
@@ -45,10 +52,16 @@ export function CancelButton({ bookingId, status }: Pick<Props, "bookingId" | "s
 
 export function DeleteButton({ bookingId, customerId }: Pick<Props, "bookingId" | "customerId">) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isDemoMode = pathname.startsWith("/demo");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleDelete() {
+    if (isDemoMode) {
+      alert("デモ画面のため、この操作はできません");
+      return;
+    }
     if (!window.confirm(
       "本当に削除しますか?\nこの操作は取り消せません。\nキャンセルの場合は「⊘ キャンセル」ボタンを使ってください。"
     )) return;
@@ -73,8 +86,9 @@ export function DeleteButton({ bookingId, customerId }: Pick<Props, "bookingId" 
       )}
       <button
         onClick={handleDelete}
-        disabled={loading}
-        className="text-xs disabled:opacity-50 transition-opacity hover:opacity-70"
+        disabled={loading || isDemoMode}
+        title={isDemoMode ? "デモ画面のため操作できません" : undefined}
+        className="text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-opacity hover:opacity-70"
         style={{ color: "#78716c" }}
       >
         {loading ? "削除中…" : "🗑️ この予約を完全に削除する"}

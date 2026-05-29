@@ -12,6 +12,10 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
+  const referer = req.headers.get("referer") ?? "";
+  if (referer.includes("/demo")) {
+    return NextResponse.json({ error: "デモ画面のため、この操作はできません" }, { status: 403 });
+  }
   const { id: pendingCustomerId } = await params;
   const body = (await req.json()) as ActionBody;
   const supabase = createAdminClient();

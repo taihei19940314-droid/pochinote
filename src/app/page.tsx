@@ -21,11 +21,6 @@ export default function HomePage() {
               <div className="text-[9px] tracking-[0.08em] mt-0.5" style={{ color: "var(--ink-soft)" }}>トリエル · for groomers</div>
             </div>
           </div>
-          <Link href="/dashboard">
-            <span className="text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-80" style={{ background: "var(--ink)", color: "var(--paper)" }}>
-              ダッシュボードへ →
-            </span>
-          </Link>
         </div>
       </nav>
 
@@ -51,14 +46,9 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-wrap items-center gap-3 lg:gap-4 mb-10 lg:mb-14">
-            <Link href="/dashboard">
+            <Link href="/demo">
               <span className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90" style={{ background: "var(--terra)", color: "white" }}>
-                先行モニターを見てみる →
-              </span>
-            </Link>
-            <Link href="/line-preview">
-              <span className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg text-sm font-semibold border transition-colors hover:bg-black/5" style={{ borderColor: "rgba(26,26,46,0.2)", color: "var(--ink)" }}>
-                飼い主体験を見る
+                実際の画面を体験 →
               </span>
             </Link>
           </div>

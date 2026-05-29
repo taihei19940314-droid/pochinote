@@ -7,6 +7,10 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const referer = request.headers.get("referer") ?? "";
+  if (referer.includes("/demo")) {
+    return NextResponse.json({ error: "デモ画面のため、この操作はできません" }, { status: 403 });
+  }
   const { id } = await params;
   let body: unknown;
   try {

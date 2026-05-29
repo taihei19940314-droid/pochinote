@@ -2,6 +2,7 @@
 
 import { useOptimistic, useTransition, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { approveBookingRequest, declineBookingRequest } from "./actions";
 
 export type PendingRecipient = {
@@ -51,11 +52,13 @@ function RecipientCard({
   onApprove,
   onDecline,
   busy,
+  isDemoMode,
 }: {
   recipient: PendingRecipient;
   onApprove: () => void;
   onDecline: () => void;
   busy: boolean;
+  isDemoMode: boolean;
 }) {
   return (
     <div className="card p-4" style={{ borderLeft: "3px solid var(--terra)" }}>
@@ -88,16 +91,18 @@ function RecipientCard({
       <div className="flex gap-2">
         <button
           onClick={onDecline}
-          disabled={busy}
-          className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-40"
+          disabled={busy || isDemoMode}
+          title={isDemoMode ? "デモ画面のため操作できません" : undefined}
+          className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: "rgba(26,26,46,0.07)", color: "var(--ink-soft)" }}
         >
           却下
         </button>
         <button
           onClick={onApprove}
-          disabled={busy}
-          className="flex-[2] py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-40"
+          disabled={busy || isDemoMode}
+          title={isDemoMode ? "デモ画面のため操作できません" : undefined}
+          className="flex-[2] py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ background: "var(--terra)", color: "white" }}
         >
           {busy ? "処理中..." : "承認"}
@@ -108,6 +113,8 @@ function RecipientCard({
 }
 
 export function PendingClient({ recipients }: { recipients: PendingRecipient[] }) {
+  const pathname = usePathname();
+  const isDemoMode = pathname.startsWith("/demo");
   const [optimisticList, removeOptimistic] = useOptimistic(
     recipients,
     (state, removedId: string) => state.filter((r) => r.id !== removedId),
@@ -122,6 +129,10 @@ export function PendingClient({ recipients }: { recipients: PendingRecipient[] }
   }
 
   function handleApprove(id: string) {
+    if (isDemoMode) {
+      showToast({ type: "error", message: "デモ画面のため、この操作はできません" });
+      return;
+    }
     setBusyId(id);
     startTransition(async () => {
       removeOptimistic(id);
@@ -136,6 +147,10 @@ export function PendingClient({ recipients }: { recipients: PendingRecipient[] }
   }
 
   function handleDecline(id: string) {
+    if (isDemoMode) {
+      showToast({ type: "error", message: "デモ画面のため、この操作はできません" });
+      return;
+    }
     setBusyId(id);
     startTransition(async () => {
       removeOptimistic(id);
@@ -182,6 +197,7 @@ export function PendingClient({ recipients }: { recipients: PendingRecipient[] }
             onApprove={() => handleApprove(r.id)}
             onDecline={() => handleDecline(r.id)}
             busy={busyId === r.id && isPending}
+            isDemoMode={isDemoMode}
           />
         ))}
       </div>

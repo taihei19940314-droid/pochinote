@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navItems = [
+const NAV_ITEMS = [
   { label: "ダッシュボード", href: "/dashboard" },
   { label: "顧客カルテ", href: "/customers" },
   { label: "LINE 自動オファー", href: "/line" },
@@ -11,9 +11,17 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const isDemoMode = pathname.startsWith("/demo");
+  const demoPrefix = isDemoMode ? "/demo" : "";
+
+  function isActive(href: string): boolean {
+    const stripped = isDemoMode ? pathname.replace(/^\/demo/, "") || "/" : pathname;
+    if (href === "/dashboard") return stripped === "/dashboard";
+    return stripped.startsWith(href);
+  }
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 h-screen border-r flex-shrink-0" style={{ background: "var(--paper)" }}>
+    <aside className="hidden lg:flex flex-col w-64 h-full border-r flex-shrink-0" style={{ background: "var(--paper)" }}>
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-5 border-b" style={{ borderColor: "var(--ink-soft, rgba(26,26,46,0.1))" }}>
         <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
@@ -33,12 +41,12 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex flex-col gap-0.5 p-3 flex-1">
-        {navItems.map(({ label, href }) => {
-          const active = pathname === href;
+        {NAV_ITEMS.map(({ label, href }) => {
+          const active = isActive(href);
           return (
             <Link
               key={href}
-              href={href}
+              href={`${demoPrefix}${href}`}
               className="px-3 py-2 rounded-md text-sm font-medium transition-colors"
               style={{
                 color: active ? "var(--terra)" : "var(--ink)",

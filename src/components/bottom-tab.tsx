@@ -5,21 +5,23 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, FileText, MessageCircle } from "lucide-react";
 
 const tabs = [
-  { label: "ホーム",  href: "/dashboard",     icon: LayoutDashboard },
-  { label: "顧客",    href: "/customers",      icon: FileText },
-  { label: "LINE",    href: "/line",            icon: MessageCircle },
+  { label: "ホーム",  href: "/dashboard",  icon: LayoutDashboard },
+  { label: "顧客",    href: "/customers",   icon: FileText },
+  { label: "LINE",    href: "/line",         icon: MessageCircle },
 ];
 
 export function BottomTab() {
   const pathname = usePathname();
+  const isDemoMode = pathname.startsWith("/demo");
+  const demoPrefix = isDemoMode ? "/demo" : "";
+  const stripped = isDemoMode ? pathname.replace(/^\/demo/, "") || "/" : pathname;
 
   function isActive(href: string): boolean {
-    if (href === "/dashboard") return pathname === "/dashboard";
+    if (href === "/dashboard") return stripped === "/dashboard";
     if (href === "/customers")
-      // bookings pages are reached from customers, so keep customers tab highlighted
-      return pathname.startsWith("/customers") || pathname.startsWith("/bookings");
-    if (href === "/line") return pathname.startsWith("/line");
-    return pathname === href;
+      return stripped.startsWith("/customers") || stripped.startsWith("/bookings");
+    if (href === "/line") return stripped.startsWith("/line");
+    return stripped === href;
   }
 
   return (
@@ -36,7 +38,7 @@ export function BottomTab() {
         return (
           <Link
             key={href}
-            href={href}
+            href={`${demoPrefix}${href}`}
             onClick={() => {
               if (active) {
                 document.querySelector("#main-scroll")?.scrollTo({ top: 0, behavior: "instant" });

@@ -36,6 +36,10 @@ async function linePush(
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const referer = request.headers.get("referer") ?? "";
+  if (referer.includes("/demo")) {
+    return NextResponse.json({ error: "デモ画面のため、この操作はできません" }, { status: 403 });
+  }
   try {
     const body = await request.json() as {
       selectedCustomerIds?: unknown;

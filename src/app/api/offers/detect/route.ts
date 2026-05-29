@@ -4,7 +4,11 @@ import { detectAvailableSlots, getJstDateStr } from "@/lib/availability";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 
-export async function POST(): Promise<NextResponse> {
+export async function POST(request: Request): Promise<NextResponse> {
+  const referer = request.headers.get("referer") ?? "";
+  if (referer.includes("/demo")) {
+    return NextResponse.json({ error: "デモ画面のため、この操作はできません" }, { status: 403 });
+  }
   try {
     const supabase = createAdminClient();
     const now = new Date();

@@ -17,6 +17,10 @@ function normalizeTime(t: string): string {
 }
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const referer = req.headers.get("referer") ?? "";
+  if (referer.includes("/demo")) {
+    return NextResponse.json({ error: "デモ画面のため、この操作はできません" }, { status: 403 });
+  }
   let body: unknown;
   try {
     body = await req.json();

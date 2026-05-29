@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ChevronLeft, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +58,8 @@ function SaveBanner({ status }: { status: "idle" | "saving" | "saved" | "error" 
 }
 
 export default function LineSettingsPage() {
+  const pathname = usePathname();
+  const isDemoMode = pathname.startsWith("/demo");
   const [credentials, setCredentials] = useState({
     line_channel_id: "",
     line_channel_secret: "",
@@ -275,25 +278,34 @@ export default function LineSettingsPage() {
 
           <div className="space-y-1.5">
             <Label htmlFor="add_friend_url">友だち追加 URL</Label>
-            <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
-              LINE Official Account Manager の「友だち追加」QR コードのリンク URL を貼り付けてください
-            </p>
-            <Input
-              id="add_friend_url"
-              type="url"
-              placeholder="https://line.me/R/ti/p/@xxxxxxx"
-              value={credentials.line_add_friend_url}
-              onChange={(e) => setCredentials((p) => ({ ...p, line_add_friend_url: e.target.value }))}
-              className="h-11 text-sm"
-            />
+            {isDemoMode ? (
+              <div className="h-11 flex items-center px-3 rounded-lg text-sm" style={{ background: "rgba(26,26,46,0.04)", color: "var(--ink-soft)" }}>
+                設定済み（デモ画面のため非表示）
+              </div>
+            ) : (
+              <>
+                <p className="text-xs" style={{ color: "var(--ink-soft)" }}>
+                  LINE Official Account Manager の「友だち追加」QR コードのリンク URL を貼り付けてください
+                </p>
+                <Input
+                  id="add_friend_url"
+                  type="url"
+                  placeholder="https://line.me/R/ti/p/@xxxxxxx"
+                  value={credentials.line_add_friend_url}
+                  onChange={(e) => setCredentials((p) => ({ ...p, line_add_friend_url: e.target.value }))}
+                  className="h-11 text-sm"
+                />
+              </>
+            )}
           </div>
         </div>
 
         <div className="mt-5">
           <Button
             onClick={saveCredentials}
-            disabled={credStatus === "saving"}
-            className="w-full h-11 font-semibold"
+            disabled={credStatus === "saving" || isDemoMode}
+            title={isDemoMode ? "デモ画面のため操作できません" : undefined}
+            className="w-full h-11 font-semibold disabled:cursor-not-allowed"
             style={{ background: "var(--terra)", color: "white" }}
           >
             {credStatus === "saving" ? "保存中..." : "保存"}
@@ -367,8 +379,9 @@ export default function LineSettingsPage() {
         <div className="mt-5">
           <Button
             onClick={saveAutoOffer}
-            disabled={autoStatus === "saving"}
-            className="w-full h-11 font-semibold"
+            disabled={autoStatus === "saving" || isDemoMode}
+            title={isDemoMode ? "デモ画面のため操作できません" : undefined}
+            className="w-full h-11 font-semibold disabled:cursor-not-allowed"
             style={{ background: "var(--terra)", color: "white" }}
           >
             {autoStatus === "saving" ? "保存中..." : "保存"}
@@ -495,8 +508,9 @@ export default function LineSettingsPage() {
         <div className="mt-5">
           <Button
             onClick={saveBusinessSettings}
-            disabled={bizStatus === "saving"}
-            className="w-full h-11 font-semibold"
+            disabled={bizStatus === "saving" || isDemoMode}
+            title={isDemoMode ? "デモ画面のため操作できません" : undefined}
+            className="w-full h-11 font-semibold disabled:cursor-not-allowed"
             style={{ background: "var(--terra)", color: "white" }}
           >
             {bizStatus === "saving" ? "保存中..." : "営業設定を保存"}
