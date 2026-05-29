@@ -41,14 +41,13 @@ export default function HomePage() {
 
           {/* 問題1: 見出しフォントサイズをスマホで縮小 */}
           <h1 className="font-display text-[40px] leading-[1.05] lg:text-[64px] lg:leading-[0.96] font-light tracking-tight mb-6 lg:mb-7">
-            トリマーが、<br />
-            施術に<span className="font-semibold italic" style={{ color: "var(--terra)" }}>集中</span>できる<br />
-            毎日を。
+            空き時間を、<br />
+            売上に<span className="font-semibold italic" style={{ color: "var(--terra)" }}>変える</span>。
           </h1>
 
           <p className="text-base lg:text-lg leading-relaxed max-w-xl mb-8 lg:mb-10" style={{ color: "var(--ink-soft)" }}>
-            LINE集客 × 空き枠自動販売 × ビフォーアフター活用。<br className="hidden lg:block" />
-            <span className="font-semibold" style={{ color: "var(--ink)" }}>トリエルは、トリマーのための"接客しないセールスエンジン"です。</span>
+            常連さんに、空き枠を LINE で自動オファー。<br className="hidden lg:block" />
+            <span className="font-semibold" style={{ color: "var(--ink)" }}>1件埋まれば、月額の元が取れる。</span>
           </p>
 
           <div className="flex flex-wrap items-center gap-3 lg:gap-4 mb-10 lg:mb-14">
@@ -69,7 +68,7 @@ export default function HomePage() {
             {[
               ["3分", "で初期設定完了"],
               ["¥0", "初期費用"],
-              ["1タップ", "写真送信"],
+              ["¥17,600", "今月の経由売上"],
             ].map(([num, label], i) => (
               <div key={i} className="flex items-center gap-5 lg:gap-8">
                 {i > 0 && <div className="w-px h-10" style={{ background: "rgba(26,26,46,0.1)" }} />}
@@ -96,10 +95,10 @@ export default function HomePage() {
           {/* 問題2: スマホで grid-cols-1、PC で grid-cols-3 */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5">
             {[
-              { icon: "📊", title: "経営の見える化", href: "/dashboard",
-                desc: "稼働率・売上・空き枠をダッシュボードで一目把握。勘ではなくデータで動ける。" },
               { icon: "💬", title: "自動オファー配信", href: "/dashboard",
                 desc: "来店周期をAIが分析。空き枠が出たら常連さんにLINEで自動配信、リピート率UP。" },
+              { icon: "📊", title: "経営の見える化", href: "/dashboard",
+                desc: "稼働率・売上・空き枠をダッシュボードで一目把握。勘ではなくデータで動ける。" },
               { icon: "📸", title: "ビフォーアフター活用", href: "/line-preview",
                 desc: "施術後の写真をワンタップで飼い主に送信。SNS口コミに育ち、新規集客につながる。" },
             ].map((f) => (
@@ -120,10 +119,11 @@ export default function HomePage() {
         <div className="max-w-2xl mx-auto px-4 lg:px-6 text-center">
           <div className="text-xs tracking-[0.2em] uppercase mb-4" style={{ color: "var(--ink-soft)" }}>Limited Monitor</div>
           <h2 className="font-display text-3xl lg:text-4xl font-light tracking-tight mb-4">先行モニター50店舗、限定募集中</h2>
-          <p className="text-base mb-2" style={{ color: "var(--ink-soft)" }}>
-            月額 <span className="font-semibold" style={{ color: "var(--ink)" }}>¥3,800</span>（Pro）・初月無料・いつでも解約可能
+          <p className="text-base mb-1" style={{ color: "var(--ink-soft)" }}>
+            先行モニター50店舗限定 <span className="font-semibold" style={{ color: "var(--ink)" }}>¥3,800/月</span>
           </p>
-          <p className="text-sm mb-10" style={{ color: "var(--ink-soft)" }}>初期費用なし。LINEと繋いで3分でスタート。</p>
+          <p className="text-sm mb-1" style={{ color: "var(--ink-soft)" }}>永久料金保証 ・ 初月無料 ・ いつでも解約可能</p>
+          <p className="text-xs mb-10" style={{ color: "var(--ink-soft)" }}>※51店舗以降は ¥5,800/月予定</p>
 
           <BetaSignupForm />
         </div>

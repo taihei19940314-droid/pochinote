@@ -13,12 +13,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "トリエル | トリマーのためのカルテツール",
-  description: "トリマーのための顧客カルテツール。ペットの性格・体型・好みを記録して、次の来店をもっと丁寧に。",
+  title: "トリエル | ペットサロン向け収益改善SaaS",
+  description: "ペットサロン向け収益改善SaaS。空き枠が出たら常連さんに LINE で自動オファー。1件埋まれば月額の元が取れる。",
   openGraph: {
-    title: "トリエル | トリマーのためのカルテツール",
-    description: "トリマーのための顧客カルテツール。ペットの性格・体型・好みを記録して、次の来店をもっと丁寧に。",
+    title: "トリエル | ペットサロン向け収益改善SaaS",
+    description: "ペットサロン向け収益改善SaaS。空き枠が出たら常連さんに LINE で自動オファー。1件埋まれば月額の元が取れる。",
     siteName: "トリエル",
+  },
+  twitter: {
+    title: "トリエル | ペットサロン向け収益改善SaaS",
+    description: "ペットサロン向け収益改善SaaS。空き枠が出たら常連さんに LINE で自動オファー。1件埋まれば月額の元が取れる。",
   },
 };
 
