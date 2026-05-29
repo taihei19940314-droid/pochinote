@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 
@@ -57,6 +57,7 @@ export default function NewBookingForm({
   mode?: "booking" | "record";
 }) {
   const router = useRouter();
+  const isDemoMode = usePathname().startsWith("/demo");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +78,7 @@ export default function NewBookingForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isDemoMode) { setError("デモ画面のため、この操作はできません"); return; }
     if (!petId) { setError("ペットを選択してください"); return; }
 
     setLoading(true);

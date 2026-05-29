@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 
@@ -23,6 +23,7 @@ function emptyPet(): PetForm {
 
 export default function NewCustomerPage() {
   const router = useRouter();
+  const isDemoMode = usePathname().startsWith("/demo");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [owner, setOwner] = useState({ name: "", phone: "", line_user_id: "" });
@@ -46,6 +47,7 @@ export default function NewCustomerPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isDemoMode) { setError("デモ画面のため、この操作はできません"); return; }
     if (!owner.name.trim()) { setError("飼い主名は必須です"); return; }
     if (!pets[0].name.trim()) { setError("1匹目のペット名は必須です"); return; }
 

@@ -21,7 +21,10 @@ export async function proxy(request: NextRequest) {
       const rewritePath = target + pathname.slice(prefix.length);
       const rewriteUrl = new URL(rewritePath, request.url);
       rewriteUrl.search = request.nextUrl.search;
-      return NextResponse.rewrite(rewriteUrl);
+      // Inject x-demo-mode header so Server Actions and server-side code can detect demo mode
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-demo-mode", "1");
+      return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } });
     }
   }
 

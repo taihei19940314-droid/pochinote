@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { use } from "react";
@@ -12,6 +12,7 @@ const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 export default function NewPetPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const isDemoMode = usePathname().startsWith("/demo");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pet, setPet] = useState({
@@ -24,6 +25,7 @@ export default function NewPetPage({ params }: { params: Promise<{ id: string }>
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isDemoMode) { setError("デモ画面のため、この操作はできません"); return; }
     if (!pet.name.trim()) { setError("ペット名は必須です"); return; }
     setSaving(true);
     setError(null);

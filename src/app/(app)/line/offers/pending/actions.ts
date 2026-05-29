@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
@@ -10,6 +11,9 @@ type ActionResult =
   | { ok: false; error: string };
 
 export async function approveBookingRequest(recipientId: string): Promise<ActionResult> {
+  if ((await headers()).get("x-demo-mode") === "1") {
+    return { ok: false, error: "デモ画面のため、この操作はできません" };
+  }
   const supabase = createAdminClient();
 
   // 冪等性: 既に処理済みか確認
@@ -80,6 +84,9 @@ export async function approveBookingRequest(recipientId: string): Promise<Action
 }
 
 export async function declineBookingRequest(recipientId: string): Promise<ActionResult> {
+  if ((await headers()).get("x-demo-mode") === "1") {
+    return { ok: false, error: "デモ画面のため、この操作はできません" };
+  }
   const supabase = createAdminClient();
 
   const { data: recipient } = await supabase

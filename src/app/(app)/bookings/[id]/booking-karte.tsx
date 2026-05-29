@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 export default function BookingKarte({
@@ -10,12 +11,14 @@ export default function BookingKarte({
   bookingId: string;
   initialMemo: string | null;
 }) {
+  const isDemoMode = usePathname().startsWith("/demo");
   const [memo, setMemo] = useState(initialMemo ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSave() {
+    if (isDemoMode) { setError("デモ画面のため、この操作はできません"); return; }
     setSaving(true);
     setSaved(false);
     setError(null);

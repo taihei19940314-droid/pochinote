@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 
 export default function EditPetPage({ params }: { params: Promise<{ id: string; pet_id: string }> }) {
   const router = useRouter();
+  const isDemoMode = usePathname().startsWith("/demo");
   const [ids, setIds] = useState<{ id: string; pet_id: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -44,6 +45,7 @@ export default function EditPetPage({ params }: { params: Promise<{ id: string; 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isDemoMode) { setError("デモ画面のため、この操作はできません"); return; }
     if (!pet.name.trim()) { setError("ペット名は必須です"); return; }
     if (!ids) return;
     setSaving(true);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { use } from "react";
 import { createClient } from "@/utils/supabase/client";
@@ -32,6 +32,7 @@ interface Staff { id: string; name: string }
 export default function EditBookingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const isDemoMode = usePathname().startsWith("/demo");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +85,7 @@ export default function EditBookingPage({ params }: { params: Promise<{ id: stri
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isDemoMode) { setError("デモ画面のため、この操作はできません"); return; }
     setSaving(true);
     setError(null);
 

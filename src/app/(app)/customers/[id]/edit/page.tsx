@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 
@@ -10,6 +10,7 @@ const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 
 export default function EditCustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const isDemoMode = usePathname().startsWith("/demo");
   const [id, setId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,6 +40,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isDemoMode) { setError("デモ画面のため、この操作はできません"); return; }
     if (!owner.name.trim()) { setError("飼い主名は必須です"); return; }
     if (!id) return;
 
