@@ -4,6 +4,8 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { OfferEngineWidget } from "./offer-engine-widget";
 import { formatBookingRange } from "@/lib/format-booking-time";
 import { calculateMonthlyOfferRevenue } from "@/lib/offer-revenue";
+import { getJstDayRange } from "@/lib/jst-helpers";
+import { calculateTodayRevenue, calculateTodayUtilization } from "@/lib/today-stats";
 
 const DEFAULT_SALON_ID = "00000000-0000-0000-0000-000000000001";
 const SALON_NAME = "ぽちのてトリミング";
@@ -61,13 +63,10 @@ const GENDER_MARK: Record<string, string> = { male: "♂", female: "♀" };
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  // JST today range in UTC
-  const jstNow = getJstNow();
-  const jstOffset = 9 * 60 * 60 * 1000;
-  const jstMidnightUtc = new Date(
-    Date.UTC(jstNow.getFullYear(), jstNow.getMonth(), jstNow.getDate()) - jstOffset
-  );
-  const tomorrowMidnightUtc = new Date(jstMidnightUtc.getTime() + 24 * 60 * 60 * 1000);
+  // JST today range in UTC (getJstDayRange に一本化)
+  const now = new Date();
+  const { dayStart: jstMidnightUtc, dayEnd: tomorrowMidnightUtc } = getJstDayRange(now);
+  const jstNow = getJstNow(); // hour/dateLabel 表示用のみ
 
   const { data: rawBookings } = await supabase
     .from("bookings")
@@ -123,10 +122,9 @@ export default async function DashboardPage() {
     .eq("ignored", false);
 
   // LINE オファー経由の今月売上
-  const now = new Date();
-  const nowJstForRevenue = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const ry = nowJstForRevenue.getUTCFullYear();
-  const rm = nowJstForRevenue.getUTCMonth();
+  const nowJstShifted = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const ry = nowJstShifted.getUTCFullYear();
+  const rm = nowJstShifted.getUTCMonth();
   const jstOffsetMs = 9 * 60 * 60 * 1000;
   const monthStartUtc = new Date(Date.UTC(ry, rm, 1) - jstOffsetMs);
   const nextMonthStartUtc = new Date(Date.UTC(ry, rm + 1, 1) - jstOffsetMs);
@@ -142,13 +140,19 @@ export default async function DashboardPage() {
 
   const monthlyOfferRevenue = calculateMonthlyOfferRevenue(offerBookings ?? [], now);
 
-  // default_slot_minutes(duration_min が null の場合の fallback)
+  // サロン設定(default_slot_minutes / business_hours)
   const { data: salonSettings } = await adminSupabase
     .from("salons")
-    .select("default_slot_minutes")
+    .select("default_slot_minutes, business_hours_start, business_hours_end")
     .eq("id", DEFAULT_SALON_ID)
     .single();
   const defaultSlotMinutes = (salonSettings?.default_slot_minutes as number | null) ?? 60;
+  const bizStart = (salonSettings?.business_hours_start as string | null) ?? "09:00";
+  const bizEnd   = (salonSettings?.business_hours_end   as string | null) ?? "18:00";
+
+  // 本日売上(見込) / 本日稼働率
+  const todayRevenue = calculateTodayRevenue(bookings, now);
+  const todayUtilization = calculateTodayUtilization(bookings, bizStart, bizEnd, defaultSlotMinutes, now);
 
   const firstBooking = bookings.length > 0 ? bookings[0] : null;
   const lastBooking = bookings.length > 0 ? bookings[bookings.length - 1] : null;
@@ -190,36 +194,46 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* KPI cards — Coming Soon */}
+        {/* KPI cards */}
         <div className="lg:col-span-5 grid grid-cols-3 gap-3 lg:gap-4">
           {/* 稼働率 */}
-          <div className="card p-4 lg:p-5 relative overflow-hidden">
+          <div className="card p-4 lg:p-5">
             <div className="text-[10px] lg:text-[11px] tracking-wider uppercase mb-2 lg:mb-3" style={{ color: "var(--ink-soft)" }}>本日の稼働率</div>
-            <div className="flex items-baseline gap-1">
-              <span className="font-display text-3xl lg:text-5xl font-light opacity-20">—</span>
-            </div>
-            <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--paper-warm)" }}>
-              <div className="h-full rounded-full w-0" style={{ background: "var(--terra)" }} />
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-1 rounded-full" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>準備中</span>
-            </div>
+            {todayUtilization > 0 ? (
+              <>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-display text-xl lg:text-2xl font-light whitespace-nowrap">
+                    {todayUtilization}%
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--paper-warm)" }}>
+                  <div className="h-full rounded-full" style={{ background: "var(--terra)", width: `${todayUtilization}%` }} />
+                </div>
+              </>
+            ) : (
+              <div className="text-xs mt-1 leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+                今日は予約なし
+              </div>
+            )}
           </div>
 
           {/* 売上 */}
-          <div className="card p-4 lg:p-5 relative overflow-hidden">
+          <div className="card p-4 lg:p-5">
             <div className="text-[10px] lg:text-[11px] tracking-wider uppercase mb-2 lg:mb-3" style={{ color: "var(--ink-soft)" }}>本日売上(見込)</div>
-            <div className="flex items-baseline gap-1">
-              <span className="font-display text-3xl lg:text-4xl font-light opacity-20">—</span>
-            </div>
-            <div className="flex items-end gap-0.5 mt-3 h-8 opacity-10">
-              {[40,55,35,70,50,60,85].map((h, i) => (
-                <div key={i} className="bar-muted flex-1" style={{ height: `${h}%` }} />
-              ))}
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-1 rounded-full" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>準備中</span>
-            </div>
+            {todayRevenue > 0 ? (
+              <>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-display text-xl lg:text-2xl font-light whitespace-nowrap">
+                    ¥{todayRevenue.toLocaleString("ja-JP")}
+                  </span>
+                </div>
+                <div className="text-[10px] mt-1 lg:mt-2" style={{ color: "var(--ink-soft)" }}>今日の合計</div>
+              </>
+            ) : (
+              <div className="text-xs mt-1 leading-relaxed" style={{ color: "var(--ink-soft)" }}>
+                まだ予約がありません
+              </div>
+            )}
           </div>
 
           {/* 空き枠オファー */}
