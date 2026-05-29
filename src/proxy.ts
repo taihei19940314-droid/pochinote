@@ -52,8 +52,10 @@ export async function proxy(request: NextRequest) {
       return res;
     }
 
-    // Not authenticated → send to /demo
-    return NextResponse.redirect(new URL("/demo", request.url));
+    // Not authenticated → redirect to /demo equivalent of the requested path
+    // e.g. /customers/123 → /demo/customers/123, /dashboard → /demo
+    const demoEquivalent = pathname === "/dashboard" ? "/demo" : `/demo${pathname}`;
+    return NextResponse.redirect(new URL(demoEquivalent, request.url));
   }
 
   return updateSession(request);

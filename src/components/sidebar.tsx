@@ -12,10 +12,17 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname();
   const isDemoMode = pathname.startsWith("/demo");
-  const demoPrefix = isDemoMode ? "/demo" : "";
+
+  // /dashboard in demo mode maps to /demo (not /demo/dashboard)
+  function demoHref(href: string): string {
+    if (!isDemoMode) return href;
+    return href === "/dashboard" ? "/demo" : `/demo${href}`;
+  }
 
   function isActive(href: string): boolean {
-    const stripped = isDemoMode ? pathname.replace(/^\/demo/, "") || "/" : pathname;
+    const stripped = isDemoMode
+      ? pathname === "/demo" ? "/dashboard" : pathname.replace(/^\/demo/, "")
+      : pathname;
     if (href === "/dashboard") return stripped === "/dashboard";
     return stripped.startsWith(href);
   }
@@ -46,7 +53,7 @@ export function Sidebar() {
           return (
             <Link
               key={href}
-              href={`${demoPrefix}${href}`}
+              href={demoHref(href)}
               className="px-3 py-2 rounded-md text-sm font-medium transition-colors"
               style={{
                 color: active ? "var(--terra)" : "var(--ink)",

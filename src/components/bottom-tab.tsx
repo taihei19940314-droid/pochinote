@@ -13,8 +13,14 @@ const tabs = [
 export function BottomTab() {
   const pathname = usePathname();
   const isDemoMode = pathname.startsWith("/demo");
-  const demoPrefix = isDemoMode ? "/demo" : "";
-  const stripped = isDemoMode ? pathname.replace(/^\/demo/, "") || "/" : pathname;
+  const stripped = isDemoMode
+    ? pathname === "/demo" ? "/dashboard" : pathname.replace(/^\/demo/, "")
+    : pathname;
+
+  function demoHref(href: string): string {
+    if (!isDemoMode) return href;
+    return href === "/dashboard" ? "/demo" : `/demo${href}`;
+  }
 
   function isActive(href: string): boolean {
     if (href === "/dashboard") return stripped === "/dashboard";
@@ -38,7 +44,7 @@ export function BottomTab() {
         return (
           <Link
             key={href}
-            href={`${demoPrefix}${href}`}
+            href={demoHref(href)}
             onClick={() => {
               if (active) {
                 document.querySelector("#main-scroll")?.scrollTo({ top: 0, behavior: "instant" });
