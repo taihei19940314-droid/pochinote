@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/utils/supabase/client";
 
 type Status = "idle" | "submitting" | "success" | "error" | "duplicate";
 
@@ -14,14 +13,24 @@ export default function BetaSignupForm() {
     if (status === "submitting") return;
     setStatus("submitting");
 
-    const supabase = createClient();
-    const { error } = await supabase.from("beta_signups").insert({ email });
+    try {
+      const res = await fetch("/api/beta-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-    if (!error) {
-      setStatus("success");
-    } else if (error.code === "23505") {
-      setStatus("duplicate");
-    } else {
+      if (res.ok) {
+        setStatus("success");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 409 || data.error === "duplicate") {
+          setStatus("duplicate");
+        } else {
+          setStatus("error");
+        }
+      }
+    } catch {
       setStatus("error");
     }
   }
