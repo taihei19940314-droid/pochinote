@@ -36,7 +36,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto px-4 lg:px-6">
           <div className="inline-flex items-center gap-2 mb-6 lg:mb-7 px-3 py-1.5 rounded-full text-xs font-medium" style={{ background: "rgba(26,26,46,0.06)", color: "var(--ink-soft)" }}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--terra)" }} />
-            先行モニター・先着 50 店舗 募集中
+            先行モニター・先着 10 店舗 募集中
           </div>
 
           {/* 問題1: 見出しフォントサイズをスマホで縮小 */}
@@ -118,12 +118,11 @@ export default function HomePage() {
       <section className="py-16 lg:py-24 border-t" style={{ borderColor: "rgba(26,26,46,0.06)" }}>
         <div className="max-w-2xl mx-auto px-4 lg:px-6 text-center">
           <div className="text-xs tracking-[0.2em] uppercase mb-4" style={{ color: "var(--ink-soft)" }}>Limited Monitor</div>
-          <h2 className="font-display text-3xl lg:text-4xl font-light tracking-tight mb-4">先行モニター50店舗、限定募集中</h2>
+          <h2 className="font-display text-3xl lg:text-4xl font-light tracking-tight mb-4">先行モニター10店舗、限定募集中</h2>
           <p className="text-base mb-1" style={{ color: "var(--ink-soft)" }}>
-            先行モニター50店舗限定 <span className="font-semibold" style={{ color: "var(--ink)" }}>¥3,800/月</span>
+            先行モニター10店舗限定 <span className="font-semibold" style={{ color: "var(--ink)" }}>¥3,800/月</span>
           </p>
-          <p className="text-sm mb-1" style={{ color: "var(--ink-soft)" }}>永久料金保証 ・ 初月無料 ・ いつでも解約可能</p>
-          <p className="text-xs mb-10" style={{ color: "var(--ink-soft)" }}>※51店舗以降は ¥5,800/月予定</p>
+          <p className="text-sm mb-10" style={{ color: "var(--ink-soft)" }}>永久料金保証 ・ 初月無料 ・ いつでも解約可能</p>
 
           <BetaSignupForm />
         </div>
