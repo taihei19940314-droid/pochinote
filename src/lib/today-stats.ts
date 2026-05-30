@@ -19,7 +19,8 @@ function isTodayJst(scheduledAt: string, dayStart: Date, dayEnd: Date): boolean 
 
 /**
  * 本日売上(見込)を計算する。
- * confirmed + completed の price 合計(NULL は 0 扱い)。
+ * confirmed + in_progress + completed の price 合計(NULL は 0 扱い)。
+ * in_progress = 施術中、当日中に completed になり売上計上される。
  */
 export function calculateTodayRevenue(
   bookings: BookingForStats[],
@@ -28,7 +29,7 @@ export function calculateTodayRevenue(
   const { dayStart, dayEnd } = getJstDayRange(now);
   return bookings.reduce((sum, b) => {
     if (!isTodayJst(b.scheduled_at, dayStart, dayEnd)) return sum;
-    if (b.status !== "confirmed" && b.status !== "completed") return sum;
+    if (b.status !== "confirmed" && b.status !== "in_progress" && b.status !== "completed") return sum;
     return sum + (b.price ?? 0);
   }, 0);
 }

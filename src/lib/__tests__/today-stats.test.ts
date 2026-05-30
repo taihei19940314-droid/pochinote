@@ -85,6 +85,18 @@ console.log("\n【R4】confirmed(NULL) + completed(8800) → 8800");
   assert("8800", r === 8800, `実際: ${r}`);
 }
 
+// R4b: in_progress も売上見込に含める
+console.log("\n【R4b】in_progress(7500) + confirmed(8000) + completed(9000) → 24500");
+{
+  const bs: B[] = [
+    { scheduled_at: today(10), status: "confirmed",   price: 8000, duration_min: 90 },
+    { scheduled_at: today(13), status: "in_progress", price: 7500, duration_min: 90 },
+    { scheduled_at: today(16), status: "confirmed",   price: 9000, duration_min: 90 },
+  ];
+  const r = calculateTodayRevenue(bs, NOW);
+  assert("24500", r === 24500, `実際: ${r}`);
+}
+
 // R5: JST 月初罠 — JST 5/1 00:30 の booking を JST 5/1 14:00 の now で → 5000
 console.log("\n【R5】JST 月初罠: now=JST 5/1 14:00、booking=JST 5/1 00:30 → 5000");
 {
