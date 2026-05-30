@@ -16,9 +16,11 @@ type Tab = "customers" | "line_pending";
 function TabsInner({
   identified,
   pending,
+  inactiveThresholdDays,
 }: {
   identified: CustomerRow[];
   pending: PendingRow[];
+  inactiveThresholdDays: number;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -75,7 +77,7 @@ function TabsInner({
 
       {/* タブコンテンツ */}
       {tab === "customers" ? (
-        <CustomersList customers={identified} />
+        <CustomersList customers={identified} inactiveThresholdDays={inactiveThresholdDays} />
       ) : (
         <PendingList pending={pending} />
       )}
@@ -145,9 +147,11 @@ function PendingList({ pending }: { pending: PendingRow[] }) {
 export function CustomersTabs({
   identified,
   pending,
+  inactiveThresholdDays,
 }: {
   identified: CustomerRow[];
   pending: PendingRow[];
+  inactiveThresholdDays: number;
 }) {
   return (
     <Suspense
@@ -162,7 +166,7 @@ export function CustomersTabs({
         </div>
       }
     >
-      <TabsInner identified={identified} pending={pending} />
+      <TabsInner identified={identified} pending={pending} inactiveThresholdDays={inactiveThresholdDays} />
     </Suspense>
   );
 }

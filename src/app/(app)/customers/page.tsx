@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { type CustomerRow } from "./customers-list";
 import { CustomersTabs, type PendingRow } from "./customers-tabs-client";
 
@@ -18,26 +19,32 @@ export default async function CustomersPage({
 }) {
   const { registered } = await searchParams;
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
 
-  const { data: customers } = await supabase
-    .from("customers")
-    .select("id, name, phone, line_user_id, line_follow_status, line_followed_at, ignored, pets(id, name, breed, gender, birth_date, weight_kg, notes, rabies_vaccination_date)")
-    .eq("salon_id", DEFAULT_SALON_ID)
-    .order("created_at", { ascending: false });
-
-  let lastVisitMap: Record<string, string> = {};
-  try {
-    const { data: bookings } = await supabase
+  const [{ data: customers }, { data: salonData }, { data: completedBookings }] = await Promise.all([
+    supabase
+      .from("customers")
+      .select("id, name, phone, line_user_id, line_follow_status, line_followed_at, ignored, pets(id, name, breed, gender, birth_date, weight_kg, notes, rabies_vaccination_date)")
+      .eq("salon_id", DEFAULT_SALON_ID)
+      .order("created_at", { ascending: false }),
+    adminSupabase
+      .from("salons")
+      .select("inactive_threshold_days")
+      .eq("id", DEFAULT_SALON_ID)
+      .single(),
+    supabase
       .from("bookings")
-      .select("customer_id, date")
-      .order("date", { ascending: false });
-    if (bookings) {
-      for (const b of bookings) {
-        if (!lastVisitMap[b.customer_id]) lastVisitMap[b.customer_id] = b.date;
-      }
-    }
-  } catch {
-    // bookings table doesn't exist yet
+      .select("customer_id, scheduled_at")
+      .eq("salon_id", DEFAULT_SALON_ID)
+      .eq("status", "completed")
+      .order("scheduled_at", { ascending: false }),
+  ]);
+
+  const inactiveThresholdDays: number = (salonData?.inactive_threshold_days as number | null) ?? 60;
+
+  const lastVisitMap: Record<string, string> = {};
+  for (const b of completedBookings ?? []) {
+    if (!lastVisitMap[b.customer_id]) lastVisitMap[b.customer_id] = b.scheduled_at;
   }
 
   const allCustomers = customers ?? [];
@@ -90,7 +97,7 @@ export default async function CustomersPage({
         </div>
       )}
 
-      <CustomersTabs identified={identified} pending={pending} />
+      <CustomersTabs identified={identified} pending={pending} inactiveThresholdDays={inactiveThresholdDays} />
     </div>
   );
 }

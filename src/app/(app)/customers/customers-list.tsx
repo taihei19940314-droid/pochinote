@@ -25,21 +25,35 @@ export interface CustomerRow {
 
 type Filter = "all" | "recent" | "overdue";
 
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
 function rabiesExpired(date: string | null): boolean {
   if (!date) return false;
-  const ms = Date.now() - new Date(date).getTime();
-  return ms > 365 * 24 * 60 * 60 * 1000;
+  return Date.now() - new Date(date).getTime() > 365 * 24 * 60 * 60 * 1000;
 }
 
-function daysSince(dateStr: string | null): number | null {
-  if (!dateStr) return null;
-  return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+function daysSinceJst(isoStr: string): number {
+  const nowJst = new Date(Date.now() + JST_OFFSET_MS);
+  const todayMs = Date.UTC(nowJst.getUTCFullYear(), nowJst.getUTCMonth(), nowJst.getUTCDate());
+  const visitJst = new Date(new Date(isoStr).getTime() + JST_OFFSET_MS);
+  const visitMs = Date.UTC(visitJst.getUTCFullYear(), visitJst.getUTCMonth(), visitJst.getUTCDate());
+  return Math.floor((todayMs - visitMs) / (1000 * 60 * 60 * 24));
+}
+
+function formatJstDate(isoStr: string): string {
+  const jst = new Date(new Date(isoStr).getTime() + JST_OFFSET_MS);
+  const y = jst.getUTCFullYear();
+  const m = String(jst.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(jst.getUTCDate()).padStart(2, "0");
+  return `${y}/${m}/${d}`;
 }
 
 export default function CustomersList({
   customers,
+  inactiveThresholdDays = 60,
 }: {
   customers: CustomerRow[];
+  inactiveThresholdDays?: number;
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -67,7 +81,7 @@ export default function CustomersList({
   const tabs: { key: Filter; label: string }[] = [
     { key: "all", label: "全員" },
     { key: "recent", label: "1ヶ月以内" },
-    { key: "overdue", label: "3ヶ月以上 / 未来店" },
+    { key: "overdue", label: "3ヶ月以上 / 新規" },
   ];
 
   return (
@@ -121,8 +135,8 @@ export default function CustomersList({
         <div className="space-y-3 px-1 lg:px-0">
           {filtered.map((c) => {
             const pet = c.pets[0];
-            const days = daysSince(c.lastVisitDate);
-            const urgent = days === null || days >= 60;
+            const days = c.lastVisitDate ? daysSinceJst(c.lastVisitDate) : null;
+            const overdue = days !== null && days > inactiveThresholdDays;
             const rabiesWarn = pet ? rabiesExpired(pet.rabies_vaccination_date) : false;
 
             return (
@@ -130,7 +144,7 @@ export default function CustomersList({
                 key={c.id}
                 href={`/customers/${c.id}`}
                 className="card p-4 lg:p-5 flex items-center gap-4 cursor-pointer transition-all hover:shadow-md"
-                style={{ borderLeft: `3px solid ${urgent ? "var(--terra)" : "transparent"}` }}
+                style={{ borderLeft: `3px solid ${overdue ? "var(--terra)" : "transparent"}` }}
               >
                   <div className="text-3xl w-12 h-12 flex items-center justify-center rounded-full flex-shrink-0"
                     style={{ background: "var(--paper-warm)" }}>
@@ -162,10 +176,10 @@ export default function CustomersList({
                   </div>
                   <div className="text-right flex-shrink-0 space-y-1">
                     {days === null ? (
-                      <div className="text-sm font-mono" style={{ color: "var(--terra)" }}>未来店</div>
+                      <div className="text-xs font-medium" style={{ color: "var(--ink-soft)" }}>新規</div>
                     ) : (
-                      <div className="text-sm font-mono" style={{ color: urgent ? "var(--terra)" : "var(--ink-soft)" }}>
-                        {days}日前
+                      <div className="text-sm font-mono" style={{ color: overdue ? "var(--terra)" : "var(--ink-soft)" }}>
+                        {formatJstDate(c.lastVisitDate!)}
                       </div>
                     )}
                   </div>
