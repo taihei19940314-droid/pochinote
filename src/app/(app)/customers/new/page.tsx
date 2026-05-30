@@ -26,7 +26,7 @@ export default function NewCustomerPage() {
   const isDemoMode = usePathname().startsWith("/demo");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [owner, setOwner] = useState({ name: "", phone: "", line_user_id: "" });
+  const [owner, setOwner] = useState({ name: "", phone: "" });
   const [pets, setPets] = useState<PetForm[]>([emptyPet()]);
 
   function setO(field: keyof typeof owner, value: string) {
@@ -62,7 +62,6 @@ export default function NewCustomerPage() {
         salon_id: DEFAULT_SALON_ID,
         name: owner.name.trim(),
         phone: owner.phone.trim() || null,
-        line_user_id: owner.line_user_id.trim() || null,
       })
       .select("id")
       .single();
@@ -123,11 +122,6 @@ export default function NewCustomerPage() {
               <label className={labelClass} style={labelStyle}>電話番号</label>
               <input type="tel" value={owner.phone} onChange={(e) => setO("phone", e.target.value)}
                 placeholder="090-0000-0000" className={inputClass} style={inputStyle} />
-            </div>
-            <div>
-              <label className={labelClass} style={labelStyle}>LINE ID</label>
-              <input type="text" value={owner.line_user_id} onChange={(e) => setO("line_user_id", e.target.value)}
-                placeholder="@hanako" className={inputClass} style={inputStyle} />
             </div>
           </div>
         </div>

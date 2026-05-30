@@ -88,7 +88,7 @@ export default function HomePage() {
               { icon: "💬", title: "自動オファー配信", href: "/dashboard",
                 desc: "来店周期をAIが分析。空き枠が出たら常連さんにLINEで自動配信、リピート率UP。" },
               { icon: "📊", title: "経営の見える化", href: "/dashboard",
-                desc: "稼働率・売上・空き枠をダッシュボードで一目把握。勘ではなくデータで動ける。" },
+                desc: "稼働率・売上・空き枠をホームで一目把握。勘ではなくデータで動ける。" },
               { icon: "📸", title: "ビフォーアフター活用", href: "/line-preview",
                 desc: "施術後の写真をワンタップで飼い主に送信。SNS口コミに育ち、新規集客につながる。" },
             ].map((f) => (

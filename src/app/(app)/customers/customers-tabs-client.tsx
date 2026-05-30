@@ -89,7 +89,7 @@ function PendingList({ pending }: { pending: PendingRow[] }) {
       <div className="card p-12 text-center">
         <div className="text-4xl mb-4">✅</div>
         <p className="text-sm" style={{ color: "var(--ink-soft)" }}>
-          本人確認待ちの LINE ユーザーはいません
+          紐付け待ちの LINE ユーザーはいません
         </p>
       </div>
     );
@@ -120,7 +120,7 @@ function PendingList({ pending }: { pending: PendingRow[] }) {
               💬
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-base">本人確認待ち</div>
+              <div className="font-semibold text-base">紐付け待ち</div>
             </div>
             <div className="text-right flex-shrink-0">
               {followedAt && (

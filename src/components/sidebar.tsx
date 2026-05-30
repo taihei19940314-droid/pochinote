@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { label: "ダッシュボード", href: "/dashboard" },
+  { label: "ホーム", href: "/dashboard" },
   { label: "顧客カルテ", href: "/customers" },
   { label: "LINE 自動オファー", href: "/line" },
 ];
